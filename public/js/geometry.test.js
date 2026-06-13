@@ -1,13 +1,15 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  toRad, normalizeSigned, bearingTo, haversineKm, horizonKm,
+  toRad, toDeg, normalizeSigned, bearingTo, haversineKm, horizonKm,
   shipHorizonKm, projectX, apparentWidthPx, hullDownState, nearness
 } from './geometry.js'
 
 const near = (a, b, eps = 0.5) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b} (±${eps})`)
 
 test('toRad', () => near(toRad(180), Math.PI, 1e-9))
+
+test('toDeg', () => near(toDeg(Math.PI), 180, 1e-9))
 
 test('normalizeSigned wraps to [-180,180]', () => {
   near(normalizeSigned(6), 6, 1e-9)
@@ -24,8 +26,8 @@ test('bearingTo cardinal directions', () => {
 })
 
 test('haversineKm ~111 km per degree on a sphere', () => {
-  near(haversineKm(0, 0, 0, 1), 111.19)
-  near(haversineKm(0, 0, 1, 0), 111.19)
+  near(haversineKm(0, 0, 0, 1), 111.19, 0.01)
+  near(haversineKm(0, 0, 1, 0), 111.19, 0.01)
 })
 
 test('horizonKm = 3.57*sqrt(h)', () => {
@@ -52,9 +54,12 @@ test('apparentWidthPx shrinks with distance and caps', () => {
   near(apparentWidthPx(300, 0.5, fov, W, 0.25), 250, 1e-6)
 })
 
-test('hullDownState: full / hulldown / gone', () => {
+test('hullDownState: full / hulldown / gone, with clipFrac', () => {
   assert.equal(hullDownState(10, 28, 30).state, 'full')
-  assert.equal(hullDownState(25, 28, 30).state, 'hulldown')
+  assert.equal(hullDownState(10, 28, 30).clipFrac, 0)
+  const mid = hullDownState(28.667, 28, 30)
+  assert.equal(mid.state, 'hulldown')
+  near(mid.clipFrac, 0.5, 0.02)
   assert.equal(hullDownState(40, 28, 30).state, 'gone')
 })
 
@@ -63,4 +68,6 @@ test('nearness is 1 near, 0 far, clamped', () => {
   near(nearness(55, 4, 55), 0, 1e-9)
   near(nearness(29.5, 4, 55), 0.5, 1e-9)
   near(nearness(1, 4, 55), 1, 1e-9) // clamped
+  near(nearness(5, 10, 10), 1, 1e-9)   // farKm == nearKm, inside -> 1
+  near(nearness(15, 10, 10), 0, 1e-9)  // farKm == nearKm, outside -> 0
 })

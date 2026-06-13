@@ -25,7 +25,9 @@ export function haversineKm(lat1, lon1, lat2, lon2) {
   return 2 * R_KM * Math.asin(Math.min(1, Math.sqrt(a)))
 }
 
-// Geometric distance to the sea horizon from height h (m), km.
+// Geometric distance to the sea horizon from height h (m), in km.
+// 3.57 is the standard horizon coefficient (~sqrt(2*R_earth) with refraction),
+// for h in metres and distance in km.
 export const horizonKm = h => 3.57 * Math.sqrt(Math.max(0, h))
 
 // Max distance a ship's superstructure stays visible from the deck.
@@ -40,6 +42,7 @@ export function projectX(bearing, viewBearing, fov, width) {
 
 // Apparent on-screen width (px) via small-angle geometry, capped.
 export function apparentWidthPx(lengthM, distanceKm, fov, width, capFrac) {
+  if (distanceKm <= 0) return capFrac * width
   const angular = lengthM / (distanceKm * 1000)          // radians
   const px = angular * (width / toRad(fov))
   return Math.min(px, capFrac * width)
@@ -56,5 +59,6 @@ export function hullDownState(distanceKm, deckH, superH) {
 
 // 0..1 nearness for the vertical-spread nudge (1 = closest, 0 = far edge).
 export function nearness(distanceKm, nearKm, farKm) {
+  if (farKm <= nearKm) return distanceKm <= nearKm ? 1 : 0
   return Math.max(0, Math.min(1, (farKm - distanceKm) / (farKm - nearKm)))
 }
