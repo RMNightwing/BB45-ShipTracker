@@ -1,8 +1,10 @@
 # Image assets
 
-Drop a transparent **`palm.png`** here (a clip-art palm tree, trunk-at-base,
-ideally facing upright or leaning slightly right). The scene will automatically
-draw it in both bottom corners — mirrored on the right — and fall back to the
-drawn clip-art palm if the file is missing.
+**`PalmTree.jpg`** is drawn in both bottom corners (mirrored on the right). It
+may be a plain JPEG on a white background — the scene knocks the white out to
+transparency in-browser (`keyOutWhite` in `public/js/scene.js`), so no
+transparent PNG is required. If the file is missing, a drawn clip-art palm is
+used as a fallback.
 
-Tune its on-screen height via `PALM_IMG_H` in `public/js/scene.js`.
+To swap art: replace `PalmTree.jpg` (or point `PALM_SRC` in `scene.js` at a new
+file). Tune on-screen height via `PALM_IMG_H`.

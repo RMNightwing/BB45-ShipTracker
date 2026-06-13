@@ -93,22 +93,44 @@ export function drawDeck(ctx, W, H) {
   }
 }
 
-// Optional palm artwork: if public/img/palm.png exists, we draw that in the
-// corners; otherwise we fall back to the drawn clip-art palm below.
+// Optional palm artwork. If the file below exists we draw it in the corners;
+// otherwise we fall back to the drawn clip-art palm. The source may be a JPEG
+// on a white background — we knock the white out to transparency in-browser, so
+// no transparent PNG or external tooling is needed.
+const PALM_SRCS = ['img/PalmTree.png', 'img/PalmTree.jpg', 'img/palm.png']
+const PALM_IMG_H = 0.34   // palm height as a fraction of the canvas (tunable)
+
 let palmImg = null, palmState = 'idle'
 function palmImage() {
-  if (palmState === 'idle' && typeof Image !== 'undefined') {
-    palmState = 'loading'
-    const im = new Image()
-    im.onload = () => { palmImg = im; palmState = 'ready' }
-    im.onerror = () => { palmState = 'missing' }
-    im.src = 'img/palm.png'
-  }
+  if (palmState === 'idle' && typeof Image !== 'undefined') { palmState = 'loading'; tryPalm(0) }
   return palmState === 'ready' ? palmImg : null
 }
+function tryPalm(i) {
+  if (i >= PALM_SRCS.length) { palmState = 'missing'; return }
+  const im = new Image()
+  im.onload = () => { palmImg = keyOutWhite(im); palmState = 'ready' }
+  im.onerror = () => tryPalm(i + 1)
+  im.src = PALM_SRCS[i]
+}
 
-// Palm artwork height as a fraction of the canvas (tunable).
-const PALM_IMG_H = 0.42
+// Return an offscreen canvas of the image. If it already has a transparent
+// background we use it as-is; otherwise we knock its near-white background out
+// to transparency (soft edge), so clip-art on white composites cleanly.
+function keyOutWhite(img) {
+  const c = document.createElement('canvas')
+  c.width = img.width; c.height = img.height
+  const cx = c.getContext('2d')
+  cx.drawImage(img, 0, 0)
+  const d = cx.getImageData(0, 0, c.width, c.height), p = d.data
+  if (p[3] < 10) return c   // top-left already transparent -> pre-keyed art
+  for (let i = 0; i < p.length; i += 4) {
+    const r = p[i], g = p[i + 1], b = p[i + 2]
+    const mn = Math.min(r, g, b), mx = Math.max(r, g, b)
+    if (mn > 225 && mx - mn < 22) p[i + 3] = mn >= 245 ? 0 : Math.round((245 - mn) / 20 * 255)
+  }
+  cx.putImageData(d, 0, 0)
+  return c
+}
 
 function drawPalmImage(ctx, W, H, img, mirror) {
   const h = H * PALM_IMG_H
