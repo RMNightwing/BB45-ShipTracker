@@ -1,3 +1,5 @@
+import { LANDFALL } from './config.js'
+
 const COMPASS16 = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW']
 export const compass16 = deg => COMPASS16[Math.round(((deg % 360) / 22.5)) % 16]
 
@@ -21,10 +23,11 @@ export function renderVerdict(wx, manualSlKm) {
   const sl = manualSlKm ?? wx?.sightlineKm
   if (sl == null) { el.textContent = '—'; return }
   const v = wx?.verdict
+  const d = Math.round(LANDFALL.distanceKm)
   const txt = {
-    hidden: `Venezuela hidden — Saharan dust. Sightline ≈ ${Math.round(sl)} km.`,
-    barely: `On the edge today — can you make out Venezuela? (~70 km)`,
-    clear: `Venezuela should be visible — ~70 km, peaks ~900 m.`
+    hidden: `${LANDFALL.name} hidden — Saharan dust. Sightline ≈ ${Math.round(sl)} km.`,
+    barely: `On the edge today — can you make out ${LANDFALL.name}? (~${d} km)`,
+    clear: `${LANDFALL.name} should be visible — ~${d} km, peak ~${LANDFALL.peakM} m.`
   }
   el.textContent = manualSlKm ? `Experimenting: sightline ${Math.round(sl)} km.`
     : (txt[v?.state] || `Sightline ≈ ${Math.round(sl)} km.`)

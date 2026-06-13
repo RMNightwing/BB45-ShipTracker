@@ -1,14 +1,20 @@
-// The deck — source of truth for the whole view. ESTIMATES until calibration (m6).
+// The deck — source of truth for the whole view. MEASURED from the patio (m6).
+// Derived horizon at height 30.5 m: waterline = 3.57·√30.5 ≈ 19.7 km.
+// Visible-to range: large container (46 m) ≈ 44 km, tanker (30 m) ≈ 39 km,
+// small craft ≈ 33 km — then hull-down culls them.
 export const DECK = {
-  lat: 12.1349,
-  lon: -68.9853,
-  height: 28,        // m above sea level
-  viewBearing: 202,  // compass dir the deck faces = view centre
-  fov: 108           // degrees, edge to edge
+  lat: 12.135778,
+  lon: -68.989280,
+  height: 30.5,      // m above sea level (measured, ~100 ft)
+  viewBearing: 223,  // centre of view; measured edges 145° (left) … 301° (right)
+  fov: 156           // 301 − 145
 }
 
-// Venezuela landfall (the visibility prize).
-export const LANDFALL = { bearing: 196, distanceKm: 70, peakM: 900 }
+// Venezuela landfall (the visibility prize). The visible feature is Cerro Santa
+// Ana on the Paraguaná Peninsula, not the flat coast. Geometric reach ≈ 122.6 km
+// vs 110 km distance → only the peak's top clears the horizon, so the verdict
+// sits at hidden/"barely" and effectively never reaches "clearly visible".
+export const LANDFALL = { name: 'Venezuela (Cerro Santa Ana)', bearing: 249, distanceKm: 110, peakM: 830 }
 
 // Toggle the simulated fleet. Stays true until the AIS relay lands (m4).
 export const USE_SIM = true
@@ -27,8 +33,9 @@ export const SUPERSTRUCTURE_M = 30
 // Apparent-size cap as a fraction of canvas width (keeps a close ship sane).
 export const SIZE_CAP_FRAC = 0.25
 
-// Open-Meteo coast bounding box (SW then NE), hugging the visible water.
-export const BBOX = [[12.02, -69.12], [12.20, -68.84]]
+// aisstream subscription box covering the view wedge out to ~45 km, with a pad.
+// [[[swLat,swLon],[neLat,neLon]]], lat first. Imported by the relay.
+export const AIS_BBOX = [[[11.70, -69.45], [12.35, -68.72]]]
 
 // Sightline (Koschmieder) calibration knobs — tuned by eye in m6.
 export const SIGHTLINE = {
