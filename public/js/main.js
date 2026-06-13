@@ -4,7 +4,7 @@ import { drawSky, drawSea, drawClouds, drawDeck, drawPalms, drawCompass, drawLan
 import { drawShip, shipAtPoint } from './ships.js'
 import { makeFleet, stepFleet } from './sim.js'
 import { fetchWeather, venezuelaVerdict } from './weather.js'
-import { renderWeather, renderVerdict, initControls, showTooltip } from './ui.js'
+import { renderWeather, renderVerdict, initControls, showTooltip, trackSticky } from './ui.js'
 
 const canvas = document.getElementById('view')
 const ctx = canvas.getContext('2d')
@@ -24,6 +24,8 @@ let ships = fleet // (milestone 4 will swap this for the live Map-derived array)
 let wx = null
 const controls = initControls(() => renderVerdict(wx, controls.manual ? controls.sightlineKm : null))
 
+const STICKY_MS = 2000 // how long a hovered ship's details linger after the cursor leaves
+let sticky = { id: null, lastSeen: 0 }
 let hitRects = []
 let mouse = { x: -1, y: -1 }
 canvas.addEventListener('mousemove', e => { mouse = { x: e.clientX, y: e.clientY } })
@@ -79,9 +81,14 @@ function frame(t) {
   drawDeck(ctx, W, H)
   drawPalms(ctx, W, H, t)
 
-  const hit = mouse.x >= 0 ? shipAtPoint(hitRects, mouse.x, mouse.y) : null
-  canvas.style.cursor = hit ? 'pointer' : 'default'
-  showTooltip(hit, mouse.x, mouse.y)
+  // Sticky hover: details follow the held ship after the cursor leaves, until
+  // it's been gone STICKY_MS or another ship is hovered.
+  const over = mouse.x >= 0 ? shipAtPoint(hitRects, mouse.x, mouse.y) : null
+  sticky = trackSticky(sticky, over ? over.ref : null, t, STICKY_MS)
+  canvas.style.cursor = over ? 'pointer' : 'default'
+  const shown = sticky.showId != null ? hitRects.find(r => r.ref === sticky.showId) : null
+  if (shown) showTooltip(shown, over ? mouse.x : shown.x + shown.w, over ? mouse.y : shown.y)
+  else showTooltip(null)
 
   requestAnimationFrame(frame)
 }

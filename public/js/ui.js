@@ -43,9 +43,20 @@ export function initControls(onChange) {
   return state
 }
 
+// Sticky-hover state machine. Given the ship currently under the cursor
+// (overRef, or null), the previous state, the clock, and a hold time:
+// - hovering a ship holds + shows it, restamping the clock;
+// - after the cursor leaves, the held ship keeps showing until ttlMs elapses;
+// - then it clears. showId is the ship to render details for this frame.
+export function trackSticky(state, overRef, now, ttlMs) {
+  if (overRef != null) return { id: overRef, lastSeen: now, showId: overRef }
+  if (state.id != null && now - state.lastSeen < ttlMs) return { id: state.id, lastSeen: state.lastSeen, showId: state.id }
+  return { id: null, lastSeen: state.lastSeen, showId: null }
+}
+
 export function showTooltip(hit, mx, my) {
   const el = document.getElementById('tooltip')
-  if (!hit) { el.style.display = 'none'; return }
+  if (!hit) { el.style.opacity = '0'; return }
   const s = hit.ship
   const brg = Math.round(bearingForTip(s))
   el.innerHTML = `<b>${s.flag || ''} ${s.name}</b><br>
@@ -53,7 +64,7 @@ export function showTooltip(hit, mx, my) {
     ${hit.distanceKm.toFixed(1)} km · ${brg}° ${compass16(brg)}<br>
     ${s.kn} kn · ${s.len} m
     ${hit.hullDown ? '<br><span class="hd">hull-down — superstructure only</span>' : ''}`
-  el.style.display = 'block'
+  el.style.opacity = '1'
   el.style.left = Math.min(mx + 14, window.innerWidth - 250) + 'px'
   el.style.top = (my + 14) + 'px'
 }

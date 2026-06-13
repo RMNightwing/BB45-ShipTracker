@@ -24,7 +24,8 @@
       border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; padding: 5px 0; font-size: 12px;
     }
     #tooltip {
-      position: fixed; z-index: 3; pointer-events: none; display: none; max-width: 240px;
+      position: fixed; z-index: 3; pointer-events: none; opacity: 0; max-width: 240px;
+      transition: opacity 0.35s ease;
       color: #eef4f7; font: 12px/1.4 -apple-system, "Segoe UI", system-ui, sans-serif;
       background: rgba(10, 16, 20, 0.86); border: 1px solid rgba(255,255,255,0.14);
       border-radius: 10px; padding: 8px 10px;

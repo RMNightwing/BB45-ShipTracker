@@ -1,6 +1,14 @@
 import { PALETTE, DECK, SUPERSTRUCTURE_M, SIZE_CAP_FRAC } from './config.js'
 import { apparentWidthPx, hullDownState, nearness } from './geometry.js'
 
+// Grow a hit box to at least min×min around its centre, so a ship only a few
+// pixels wide stays easy to hover. The drawn silhouette is unaffected — this
+// only enlarges the invisible interactive target.
+export function padRect(x, y, w, h, min) {
+  const pw = Math.max(w, min), ph = Math.max(h, min)
+  return { x: x + w / 2 - pw / 2, y: y + h / 2 - ph / 2, w: pw, h: ph }
+}
+
 // Topmost (last-drawn) ship whose hit box contains the point, else null.
 export function shipAtPoint(rects, px, py) {
   for (let i = rects.length - 1; i >= 0; i--) {
@@ -77,8 +85,8 @@ export function drawShip(ctx, s, x, distanceKm, W, H, horizonY, seaBottomY, exag
   ;(SILHOUETTES[s.type] || SILHOUETTES.coaster)(ctx, w, h)
   ctx.restore()
 
-  return { ref: s.id, ship: s, distanceKm, hullDown: hd.state === 'hulldown',
-           x: x - w / 2, y: baseY - h * 1.2, w, h: h * 1.4 }
+  const box = padRect(x - w / 2, baseY - h * 1.2, w, h * 1.4, 28)
+  return { ref: s.id, ship: s, distanceKm, hullDown: hd.state === 'hulldown', ...box }
 }
 
 function mix(a, b, t) {
