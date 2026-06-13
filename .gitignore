@@ -1,0 +1,6 @@
+node_modules/
+server/.env
+.idea/
+mockups/
+.superpowers/
+.DS_Store
