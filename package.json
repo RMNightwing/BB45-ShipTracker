@@ -4,9 +4,15 @@
   "private": true,
   "type": "module",
   "description": "First-person horizon ship-watcher for a deck in Blue Bay, Curacao",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node server/static.js",
+    "relay": "node server/relay.js",
     "test": "node --test"
+  },
+  "dependencies": {
+    "ws": "^8.21.0"
   }
 }
