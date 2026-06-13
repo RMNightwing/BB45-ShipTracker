@@ -93,34 +93,89 @@ export function drawDeck(ctx, W, H) {
   }
 }
 
-// Dark semi-transparent palm silhouettes intruding ~15% into each bottom corner.
-export function drawPalms(ctx, W, H, t) {
-  const intr = 0.15
-  drawPalm(ctx, W, H, t, false, intr)        // bottom-left
-  drawPalm(ctx, W, H, t, true, intr)         // bottom-right (mirrored)
+// Optional palm artwork: if public/img/palm.png exists, we draw that in the
+// corners; otherwise we fall back to the drawn clip-art palm below.
+let palmImg = null, palmState = 'idle'
+function palmImage() {
+  if (palmState === 'idle' && typeof Image !== 'undefined') {
+    palmState = 'loading'
+    const im = new Image()
+    im.onload = () => { palmImg = im; palmState = 'ready' }
+    im.onerror = () => { palmState = 'missing' }
+    im.src = 'img/palm.png'
+  }
+  return palmState === 'ready' ? palmImg : null
 }
 
-function drawPalm(ctx, W, H, t, mirror, intr) {
+// Palm artwork height as a fraction of the canvas (tunable).
+const PALM_IMG_H = 0.42
+
+function drawPalmImage(ctx, W, H, img, mirror) {
+  const h = H * PALM_IMG_H
+  const w = h * (img.width / img.height)
   ctx.save()
   if (mirror) { ctx.translate(W, 0); ctx.scale(-1, 1) }
-  ctx.fillStyle = 'rgba(20,30,28,0.55)'
-  ctx.strokeStyle = 'rgba(20,30,28,0.55)'
-  // Trunk rising from off-frame at the corner.
-  const bx = -W * 0.02, by = H * 1.02
-  ctx.lineWidth = Math.max(6, W * 0.008)
-  ctx.beginPath(); ctx.moveTo(bx, by)
-  ctx.quadraticCurveTo(W * 0.06, H * 0.7, W * 0.10, H * 0.34); ctx.stroke()
-  const cx = W * 0.10, cy = H * 0.34
-  // Fronds arcing inward over the top edge of the corner.
-  for (let i = 0; i < 6; i++) {
-    const ang = -0.2 + i * 0.42 + 0.04 * Math.sin(t / 900 + i)
-    const len = W * (0.16 + intr * 0.6)
-    const ex = cx + Math.cos(ang) * len, ey = cy + Math.sin(ang) * len * 0.7
-    ctx.lineWidth = Math.max(2, W * 0.003)
-    ctx.beginPath(); ctx.moveTo(cx, cy)
-    ctx.quadraticCurveTo(cx + (ex - cx) * 0.5, cy - H * 0.06, ex, ey); ctx.stroke()
+  ctx.drawImage(img, -W * 0.015, H - h + H * 0.015, w, h) // base tucked into the corner
+  ctx.restore()
+}
+
+// Palm silhouettes nestled into each bottom corner (image if available, else drawn).
+export function drawPalms(ctx, W, H, t) {
+  const img = palmImage()
+  if (img) { drawPalmImage(ctx, W, H, img, false); drawPalmImage(ctx, W, H, img, true) }
+  else { drawPalm(ctx, W, H, t, false); drawPalm(ctx, W, H, t, true) }
+}
+
+function drawPalm(ctx, W, H, t, mirror) {
+  ctx.save()
+  if (mirror) { ctx.translate(W, 0); ctx.scale(-1, 1) }
+  ctx.fillStyle = 'rgba(18,28,26,0.62)'
+
+  // Crown low in the corner so the whole tree sits in the bottom ~25%.
+  const cx = W * 0.075, cy = H * 0.75
+  const baseX = -W * 0.015, baseY = H * 1.02
+  const tw = Math.max(5, W * 0.011)            // trunk half-width at the base
+
+  // Curved tapered trunk from the off-frame corner up to the crown.
+  ctx.beginPath()
+  ctx.moveTo(baseX - tw, baseY)
+  ctx.quadraticCurveTo(W * 0.015, H * 0.92, cx - tw * 0.35, cy)
+  ctx.lineTo(cx + tw * 0.35, cy)
+  ctx.quadraticCurveTo(W * 0.055, H * 0.92, baseX + tw, baseY)
+  ctx.closePath(); ctx.fill()
+
+  // Coconut cluster at the crown.
+  for (const [dx, dy] of [[-0.35, 0.15], [0.35, 0.2], [0, 0.45]]) {
+    ctx.beginPath()
+    ctx.arc(cx + dx * W * 0.018, cy + dy * H * 0.02, Math.max(2.5, W * 0.0055), 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // Fronds: filled leaves fanning across the top, tips drooping.
+  const N = 8
+  const base = H * (0.11 + 0.015 * Math.sin(t / 4000))   // gentle breathing
+  for (let i = 0; i < N; i++) {
+    const f = i / (N - 1)                                 // 0..1 left -> right
+    const ang = -Math.PI * (0.94 - f * 0.88)              // ~ -169 .. -11 deg
+    const sway = 0.04 * Math.sin(t / 1100 + i)
+    const reach = base * (0.78 + 0.22 * Math.sin(f * Math.PI)) // longer in the middle
+    frond(ctx, cx, cy, ang + sway, reach, W * 0.013)
   }
   ctx.restore()
+}
+
+// One filled palm leaf: a pointed lens from (cx,cy) out to a drooping tip.
+function frond(ctx, cx, cy, ang, len, width) {
+  const ca = Math.cos(ang), sa = Math.sin(ang)
+  const tipX = cx + ca * len
+  const tipY = cy + sa * len + len * 0.3       // gravity droop at the tip
+  const mx = cx + ca * len * 0.5, my = cy + sa * len * 0.5
+  const nx = -sa, ny = ca                        // unit normal to the spine
+  ctx.beginPath()
+  ctx.moveTo(cx, cy)
+  ctx.quadraticCurveTo(mx + nx * width, my + ny * width, tipX, tipY)
+  ctx.quadraticCurveTo(mx - nx * width, my - ny * width, cx, cy)
+  ctx.fill()
 }
 
 // Thin bearing strip just above the stone band: degree + cardinal ticks.
