@@ -27,10 +27,13 @@ export function normalize(raw) {
     }
   }
   if (raw.MessageType === 'ShipStaticData') {
+    const dim = body.Dimension
+    const len = dim ? (dim.A || 0) + (dim.B || 0) : 0   // bow-to-stern, metres
     return {
       type: 'ship', mmsi,
       name: clean(body.Name), dest: clean(body.Destination),
-      shipType: body.Type || undefined
+      shipType: body.Type || undefined,
+      ...(len ? { len } : {})
     }
   }
   return null

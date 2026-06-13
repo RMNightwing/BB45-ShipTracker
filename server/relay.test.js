@@ -24,6 +24,24 @@ test('normalize: ShipStaticData → ship update with name/dest/type', () => {
   })
 })
 
+test('normalize: ShipStaticData → captures length from AIS dimensions (A+B)', () => {
+  const raw = {
+    MessageType: 'ShipStaticData',
+    MetaData: { MMSI: 1 },
+    Message: { ShipStaticData: { Name: 'X', Type: 70, Dimension: { A: 180, B: 70, C: 16, D: 16 } } }
+  }
+  assert.equal(normalize(raw).len, 250)
+})
+
+test('normalize: ShipStaticData without dimensions omits len', () => {
+  const raw = {
+    MessageType: 'ShipStaticData',
+    MetaData: { MMSI: 1 },
+    Message: { ShipStaticData: { Name: 'X', Type: 70 } }
+  }
+  assert.ok(!('len' in normalize(raw)))
+})
+
 test('normalize: unknown message type → null', () => {
   assert.equal(normalize({ MessageType: 'AidsToNavigationReport', MetaData: {}, Message: {} }), null)
 })
