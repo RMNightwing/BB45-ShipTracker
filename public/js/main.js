@@ -1,4 +1,4 @@
-import { drawSky, drawSea, drawClouds } from './scene.js'
+import { drawSky, drawSea, drawClouds, drawDeck, drawPalms, drawCompass } from './scene.js'
 
 const canvas = document.getElementById('view')
 const ctx = canvas.getContext('2d')
@@ -18,6 +18,10 @@ function frame(t) {
   drawSky(ctx, W, H, t)
   drawClouds(ctx, W, H, t)
   drawSea(ctx, W, H, t)
+  drawCompass(ctx, W, H)
+  // ships will be drawn here in Task 12
+  drawDeck(ctx, W, H)
+  drawPalms(ctx, W, H, t)
   requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame)
