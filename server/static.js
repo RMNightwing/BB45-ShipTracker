@@ -1,6 +1,7 @@
 import { createServer as httpServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { resolve, normalize, join, extname, sep } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -30,7 +31,7 @@ export function createServer(rootDir) {
 }
 
 // Run directly: `node server/static.js`
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const port = Number(process.env.PORT) || 5173
   createServer('public').listen(port, () => {
     console.log(`BB45 dev server: http://localhost:${port}`)
