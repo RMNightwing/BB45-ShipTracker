@@ -32,15 +32,22 @@ export function renderVerdict(wx, manualSlKm) {
 
 // Wire the slider + toggles. Returns a small state object the loop reads.
 export function initControls(onChange) {
-  const state = { sightlineKm: 40, drift: true, liveWx: true, manual: false }
+  const state = { sightlineKm: 40, drift: true, liveWx: true, manual: false, live: false }
   const sl = document.getElementById('sl'), slVal = document.getElementById('sl-val')
-  const drift = document.getElementById('drift'), live = document.getElementById('livewx')
+  const drift = document.getElementById('drift'), wxBtn = document.getElementById('livewx')
+  const liveBtn = document.getElementById('live')
   const setSl = v => { slVal.textContent = `${v} km`; }
   setSl(sl.value)
   sl.addEventListener('input', () => { state.sightlineKm = +sl.value; state.manual = true; setSl(sl.value); onChange(state) })
   drift.addEventListener('click', () => { state.drift = !state.drift; drift.textContent = state.drift ? '⏸ Drift' : '▶ Drift'; onChange(state) })
-  live.addEventListener('click', () => { state.liveWx = !state.liveWx; live.textContent = state.liveWx ? '◉ Live wx' : '○ Live wx'; onChange(state) })
+  wxBtn.addEventListener('click', () => { state.liveWx = !state.liveWx; wxBtn.textContent = state.liveWx ? '◉ Live wx' : '○ Live wx'; onChange(state) })
+  liveBtn.addEventListener('click', () => { state.live = !state.live; liveBtn.textContent = state.live ? '📡 Live ships' : '📡 Go live'; onChange(state) })
   return state
+}
+
+export function setShipsStatus(text) {
+  const el = document.getElementById('ships-status')
+  if (el) el.textContent = text
 }
 
 // Sticky-hover state machine. Given the ship currently under the cursor

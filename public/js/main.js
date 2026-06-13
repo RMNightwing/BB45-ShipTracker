@@ -4,7 +4,9 @@ import { drawSky, drawSea, drawClouds, drawDeck, drawPalms, drawCompass, drawLan
 import { drawShip, shipAtPoint } from './ships.js'
 import { makeFleet, stepFleet } from './sim.js'
 import { fetchWeather, venezuelaVerdict } from './weather.js'
-import { renderWeather, renderVerdict, initControls, showTooltip, trackSticky } from './ui.js'
+import { renderWeather, renderVerdict, initControls, showTooltip, trackSticky, setShipsStatus } from './ui.js'
+import { connectRelay } from './relay-client.js'
+import { applyShipMessage, buildShips, pruneStale } from './store.js'
 
 const canvas = document.getElementById('view')
 const ctx = canvas.getContext('2d')
@@ -19,10 +21,42 @@ function resize() {
 window.addEventListener('resize', resize)
 resize()
 
-const fleet = USE_SIM ? makeFleet() : []
-let ships = fleet // (milestone 4 will swap this for the live Map-derived array)
+const fleet = makeFleet()          // kept around so you can toggle back to Sim
+let ships = fleet
 let wx = null
-const controls = initControls(() => renderVerdict(wx, controls.manual ? controls.sightlineKm : null))
+
+// Live AIS plumbing (milestone 4): a relay client feeds the store; the frame
+// loop derives ships[] from it whenever Live ships is on.
+const RELAY_URL = 'ws://localhost:8080'
+const SHIP_TTL = 10 * 60 * 1000    // drop ships unheard for 10 min
+const store = new Map()
+let relay = null, socketOpen = false, upstreamOn = false
+
+function syncLive(on) {
+  if (on && !relay) {
+    socketOpen = upstreamOn = false
+    setShipsStatus('connecting…')
+    relay = connectRelay(RELAY_URL, {
+      onShip: m => applyShipMessage(store, m, performance.now()),
+      onStatus: c => { upstreamOn = c },
+      onSocket: o => { socketOpen = o }
+    })
+  } else if (!on && relay) {
+    relay.close(); relay = null; store.clear()
+    setShipsStatus('simulated')
+  }
+}
+
+const controls = initControls(() => {
+  renderVerdict(wx, controls.manual ? controls.sightlineKm : null)
+  syncLive(controls.live)
+})
+
+if (!USE_SIM) { // config asked to start live
+  controls.live = true
+  const b = document.getElementById('live'); if (b) b.textContent = '📡 Live ships'
+  syncLive(true)
+}
 
 const STICKY_MS = 2000 // how long a hovered ship's details linger after the cursor leaves
 let sticky = { id: null, lastSeen: 0 }
@@ -57,7 +91,17 @@ function frame(t) {
   if (effSl != null) drawLandfall(ctx, W, H, venezuelaVerdict(effSl).opacity)
   drawCompass(ctx, W, H)
 
-  if (controls.drift && USE_SIM) stepFleet(fleet, dt)
+  if (controls.live) {
+    pruneStale(store, performance.now(), SHIP_TTL)
+    ships = buildShips(store)
+    setShipsStatus(
+      !socketOpen ? 'relay offline — run: npm run relay'
+      : !upstreamOn ? 'relay up · linking to AIS…'
+      : `live · ${ships.length} ship${ships.length === 1 ? '' : 's'}`)
+  } else {
+    if (controls.drift) stepFleet(fleet, dt)
+    ships = fleet
+  }
 
   const hY = horizonY(W, H)
   const seaBottom = H - Math.max(26, H * 0.05) - 18
