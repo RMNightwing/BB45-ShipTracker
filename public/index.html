@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BB45 — Blue Bay</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0c1014; overflow: hidden; }
+    #view { display: block; width: 100vw; height: 100vh; }
+    .panel {
+      position: fixed; z-index: 2; color: #eef4f7;
+      font: 13px/1.45 -apple-system, "Segoe UI", system-ui, sans-serif;
+      background: rgba(12, 20, 26, 0.55); backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; padding: 12px 14px;
+    }
+    #wx { top: 14px; left: 14px; min-width: 150px; }
+    #see { top: 14px; right: 14px; min-width: 190px; }
+    .panel h2 { margin: 0 0 6px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; opacity: .7; }
+    .panel .row { display: flex; justify-content: space-between; gap: 14px; }
+    #see input[type=range] { width: 100%; }
+    .btns { display: flex; gap: 8px; margin-top: 8px; }
+    .btns button {
+      flex: 1; cursor: pointer; color: #eef4f7; background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; padding: 5px 0; font-size: 12px;
+    }
+    #tooltip {
+      position: fixed; z-index: 3; pointer-events: none; display: none; max-width: 240px;
+      color: #eef4f7; font: 12px/1.4 -apple-system, "Segoe UI", system-ui, sans-serif;
+      background: rgba(10, 16, 20, 0.86); border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 10px; padding: 8px 10px;
+    }
+    #tooltip b { font-size: 13px; }
+    #tooltip .hd { color: #ffd27a; }
+  </style>
+</head>
+<body>
+  <canvas id="view"></canvas>
+
+  <section id="wx" class="panel">
+    <h2>Weather</h2>
+    <div id="wx-body">loading…</div>
+  </section>
+
+  <section id="see" class="panel">
+    <h2>How far you can see</h2>
+    <div id="verdict">—</div>
+    <div class="row" style="margin-top:8px"><span>Sightline</span><span id="sl-val">— km</span></div>
+    <input id="sl" type="range" min="2" max="200" step="1" value="40">
+    <div class="btns">
+      <button id="drift">⏸ Drift</button>
+      <button id="livewx">◉ Live wx</button>
+    </div>
+  </section>
+
+  <div id="tooltip"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
