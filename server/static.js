@@ -1,6 +1,6 @@
 import { createServer as httpServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
-import { resolve, normalize, join, extname } from 'node:path'
+import { resolve, normalize, join, extname, sep } from 'node:path'
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -16,9 +16,9 @@ export function createServer(rootDir) {
   return httpServer(async (req, res) => {
     try {
       const urlPath = decodeURIComponent(new URL(req.url, 'http://x').pathname)
-      const rel = normalize(urlPath).replace(/^(\.\.[/\\])+/, '')
-      let filePath = join(root, rel)
-      if (!filePath.startsWith(root)) { res.writeHead(403).end('forbidden'); return }
+      let filePath = join(root, normalize(urlPath))
+      // Reject anything that resolves outside root (separator boundary, not bare prefix).
+      if (filePath !== root && !filePath.startsWith(root + sep)) { res.writeHead(403).end('forbidden'); return }
       if (urlPath.endsWith('/')) filePath = join(filePath, 'index.html')
       const body = await readFile(filePath)
       res.writeHead(200, { 'content-type': MIME[extname(filePath)] || 'application/octet-stream' })
