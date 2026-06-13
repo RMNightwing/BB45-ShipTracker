@@ -71,8 +71,8 @@ test('subscription: wraps key with coast bbox and the two message types', () => 
   assert.deepEqual(sub.FilterMessageTypes, ['PositionReport', 'ShipStaticData'])
 })
 
-test('BBOX hugs the Blue Bay coast', () => {
-  assert.deepEqual(BBOX, [[[12.02, -69.12], [12.20, -68.84]]])
+test('BBOX covers the view wedge out to ~45 km', () => {
+  assert.deepEqual(BBOX, [[[11.70, -69.45], [12.35, -68.72]]])
 })
 
 test('parseEnv: reads KEY=value pairs, ignores comments and blanks', () => {

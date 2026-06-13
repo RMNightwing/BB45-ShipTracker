@@ -4,9 +4,10 @@
 // wiring at the bottom only runs when this file is executed directly.
 
 import { pathToFileURL } from 'node:url'
+import { AIS_BBOX } from '../public/js/config.js'
 
-// Bounding box hugging the Blue Bay coast: [[[swLat,swLon],[neLat,neLon]]].
-export const BBOX = [[[12.02, -69.12], [12.20, -68.84]]]
+// aisstream subscription box — single source of truth in public/js/config.js.
+export const BBOX = AIS_BBOX
 
 const clean = (s) => {
   const t = typeof s === 'string' ? s.trim() : ''
@@ -85,12 +86,17 @@ async function main() {
   // Browsers connect here; we fan out every ship/status message to them.
   const server = new WebSocketServer({ port: RELAY_PORT })
   server.on('listening', () => console.log(`BB45 relay: ws://localhost:${RELAY_PORT} → aisstream`))
+  let upstreamConnected = false
   const broadcast = (msg) => {
     const json = JSON.stringify(msg)
     for (const client of server.clients) {
       if (client.readyState === WebSocket.OPEN) client.send(json)
     }
   }
+  // Tell each newly-connected browser the current upstream status right away,
+  // so a browser that connects after we've already linked to AIS isn't stuck
+  // showing "linking…".
+  server.on('connection', (ws) => ws.send(JSON.stringify({ type: 'status', connected: upstreamConnected })))
 
   // Upstream connection with reconnect + mandatory resubscribe on every open.
   let attempt = 0
@@ -98,6 +104,7 @@ async function main() {
     const up = new WebSocket(UPSTREAM)
     up.on('open', () => {
       attempt = 0
+      upstreamConnected = true
       up.send(JSON.stringify(subscription(apiKey)))
       broadcast({ type: 'status', connected: true })
       console.log('aisstream connected, subscription sent')
@@ -109,6 +116,7 @@ async function main() {
       if (ship) broadcast(ship)
     })
     const reconnect = () => {
+      upstreamConnected = false
       broadcast({ type: 'status', connected: false })
       const delay = backoff(attempt++)
       console.log(`aisstream down, reconnecting in ${delay / 1000}s`)
@@ -120,6 +128,6 @@ async function main() {
   connect()
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main()
 }

@@ -35,7 +35,7 @@ export function createServer(rootDir) {
 }
 
 // Run directly: `node server/static.js`
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const port = Number(process.env.PORT) || 5173
   createServer('public').listen(port, () => {
     console.log(`BB45 dev server: http://localhost:${port}`)
