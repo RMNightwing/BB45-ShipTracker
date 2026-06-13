@@ -1,3 +1,5 @@
+import { drawSky, drawSea, drawClouds } from './scene.js'
+
 const canvas = document.getElementById('view')
 const ctx = canvas.getContext('2d')
 
@@ -13,10 +15,9 @@ resize()
 
 function frame(t) {
   ctx.clearRect(0, 0, W, H)
-  // Temporary proof-of-life: vertical gradient so we can confirm the loop runs.
-  const g = ctx.createLinearGradient(0, 0, 0, H)
-  g.addColorStop(0, '#7fb6e6'); g.addColorStop(1, '#3f7d92')
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H)
+  drawSky(ctx, W, H, t)
+  drawClouds(ctx, W, H, t)
+  drawSea(ctx, W, H, t)
   requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame)
