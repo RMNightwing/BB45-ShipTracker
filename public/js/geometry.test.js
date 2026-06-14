@@ -2,7 +2,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   toRad, toDeg, normalizeSigned, bearingTo, haversineKm, horizonKm,
-  shipHorizonKm, projectX, apparentWidthPx, hullDownState, nearness, enu
+  shipHorizonKm, projectX, apparentWidthPx, hullDownState, nearness, enu,
+  fannedPlacement
 } from './geometry.js'
 import { VIEWS, LANDFALL } from './config.js'
 
@@ -88,4 +89,33 @@ test('Venezuela landfall stays in frame in both views', () => {
     const off = Math.abs(normalizeSigned(LANDFALL.bearing - v.viewBearing))
     assert.ok(off <= v.fov / 2, `${name}: landfall ${off.toFixed(1)}° vs half-fov ${v.fov / 2}°`)
   }
+})
+
+test('fannedPlacement leaves a far-edge ship unchanged (nearness 0 → scale 1)', () => {
+  const eye = { e: 0, n: 0 }, ship = { e: 0, n: 10000 } // 10 km north
+  const r = fannedPlacement(eye, ship, 40, 0.7, 2, 40)  // distance == farKm → nearness 0
+  assert.equal(r.scale, 1)
+  assert.equal(r.e, 0)
+  assert.equal(r.n, 10000)
+})
+
+test('fannedPlacement preserves bearing (result is colinear with eye→ship)', () => {
+  const eye = { e: 0, n: 0 }, ship = { e: 3000, n: 4000 } // 5 km, bearing ~36.9°
+  const r = fannedPlacement(eye, ship, 5, 0.7, 2, 40)
+  assert.ok(Math.abs(r.e * ship.n - r.n * ship.e) < 1e-6)
+  assert.ok(r.scale < 1)
+})
+
+test('fannedPlacement preserves apparent size (scale / resultDistance == 1 / trueDistance)', () => {
+  const eye = { e: 0, n: 0 }, ship = { e: 0, n: 5000 } // 5 km == 5000 m
+  const r = fannedPlacement(eye, ship, 5, 0.7, 2, 40)
+  const resultDist = Math.hypot(r.e - eye.e, r.n - eye.n)
+  assert.ok(Math.abs(r.scale / resultDist - 1 / 5000) < 1e-9)
+})
+
+test('fannedPlacement nudges nearer ships more (smaller scale)', () => {
+  const eye = { e: 0, n: 0 }, ship = { e: 0, n: 5000 }
+  const near = fannedPlacement(eye, ship, 3, 0.7, 2, 40)
+  const far = fannedPlacement(eye, ship, 20, 0.7, 2, 40)
+  assert.ok(near.scale < far.scale)
 })
