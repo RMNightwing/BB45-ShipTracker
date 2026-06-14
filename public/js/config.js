@@ -26,13 +26,19 @@ export const USE_SIM = true
 // floating below it.
 export const FAR_KM = 40
 
-// Vertical fan-out (the only stylized axis). Nearer ships are pulled closer along
-// their own sight-ray so they sit lower in the frame, then scaled down by the same
-// factor so bearing and apparent size stay EXACT. 0 = physically true (ships pile at
-// the horizon); higher = more dramatic foreground spread. Tune by eye in-browser.
-export const EXAGGERATION = 0.7
-// Distance (km) at/below which a ship gets the full nudge; nearness ramps 1→0 from
-// here out to FAR_KM.
+// Perceptual ship model — size/spread/haze tuned to the eye, not optics. See
+// docs/superpowers/specs/2026-06-14-perceptual-ship-model-design.md. These are the
+// baked defaults; the Calibration sliders override SIZE_GAIN/DEPTH_SPREAD/HAZE_STRENGTH
+// live. Tune by eye against the real bay, then read the values back here.
+export const SIZE_GAIN = 0.0016     // overall magnification (Size slider); absorbs units
+export const SIZE_CONSTANCY = 0.4   // 0 = optics (∝1/dist); 1 = size depends only on length
+export const MIN_ANGLE = 0.012      // rad: legibility floor for the farthest ship
+export const MAX_ANGLE = 0.5        // rad: cap so a near ship can't swallow the frame
+export const DEPTH_SPREAD = 0.7     // vertical fan (Spread slider); replaces EXAGGERATION
+export const HAZE_STRENGTH = 0.4    // ship haze fade (Haze slider); 0 = crisp to the cull
+export const HAZE_FLOOR = 0.35      // minimum ship clarity (never veiled)
+// Distance (km) at/below which a ship gets the full depth nudge; nearness ramps 1→0
+// from here out to FAR_KM.
 export const NEAR_KM = 2
 
 // Minimum drawn ship width (px), so the farthest vessel is a faint smudge on the
