@@ -59,15 +59,25 @@ export function drawSea(ctx, W, H, t, env) {
   horizonPath(ctx, W, H); ctx.stroke(); ctx.globalAlpha = 1
 }
 
-export function drawClouds(ctx, W, H, t) {
+const mod = (a, n) => ((a % n) + n) % n
+
+export function drawClouds(ctx, W, H, t, env) {
   const y = horizonY(W, H)
+  const pct = Math.max(0, Math.min(100, env.cloudPct ?? 40))
+  const n = Math.round(2 + (pct / 100) * 6)                 // 2..8 clouds
+  const baseAlpha = 0.08 + (pct / 100) * 0.22               // wispy..dense
+  const amb = env.ambient ?? 1
+  const tint = [40 + 215 * amb, 45 + 210 * amb, 70 + 185 * amb] // dark at night, white by day
+  // Drift from the crosswind component relative to the view bearing.
+  const rel = (env.wind.dir - DECK.viewBearing) * Math.PI / 180
+  const drift = Math.sin(rel) * (env.wind.kn || 5)
   ctx.save()
-  for (let i = 0; i < 5; i++) {
-    const speed = 0.004 + i * 0.0015
-    const cx = ((t * speed + i * 320) % (W + 360)) - 180
-    const cy = y * (0.25 + 0.12 * i)
-    const s = 50 + i * 18
-    ctx.fillStyle = `rgba(255,255,255,${0.18 - i * 0.02})`
+  for (let i = 0; i < n; i++) {
+    const speed = drift * (0.6 + i * 0.12) * 0.4
+    const cx = mod(t / 1000 * speed + i * 320, W + 360) - 180
+    const cy = y * (0.22 + 0.13 * (i % 4))
+    const s = 50 + (i % 4) * 18
+    ctx.fillStyle = rgba(tint, baseAlpha - (i % 4) * 0.015)
     for (const [ox, oy, r] of [[-s, 6, s * 0.7], [0, 0, s], [s, 8, s * 0.6], [s * 0.4, 12, s * 0.8]]) {
       ctx.beginPath(); ctx.ellipse(cx + ox, cy + oy, r, r * 0.55, 0, 0, Math.PI * 2); ctx.fill()
     }
