@@ -1,7 +1,8 @@
 # BB45 — Three.js 3D migration + two-view system
 
 Date: 2026-06-14
-Status: approved (design)
+Status: implemented
+Implemented on Three.js r160 (vendored). Cylindrical render-to-target path shipped for the wide view; the ~110° perspective fallback was NOT needed (pending the user's on-device performance check).
 
 ## Goal
 

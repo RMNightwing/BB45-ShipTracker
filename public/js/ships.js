@@ -1,6 +1,3 @@
-import { PALETTE, SUPERSTRUCTURE_M, SIZE_CAP_FRAC, MIN_SHIP_PX } from './config.js'
-import { apparentWidthPx, hullDownState, nearness, normalizeSigned } from './geometry.js'
-import { activeView } from './view.js'
 
 // Grow a hit box to at least min×min around its centre, so a ship only a few
 // pixels wide stays easy to hover. The drawn silhouette is unaffected — this
@@ -17,12 +14,6 @@ export function shipAtPoint(rects, px, py) {
     if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) return r
   }
   return null
-}
-
-// Atmospheric-perspective alpha: solid up close, fading into haze near the limit.
-function hazeAlpha(distanceKm, limitKm) {
-  const t = Math.min(1, distanceKm / limitKm)
-  return Math.max(0.16, 1 - t * t)
 }
 
 // 0..1 "how much night": 0 in full daylight, 1 deep night. Driven by the sky's
@@ -157,50 +148,6 @@ export const SILHOUETTES = {
       ctx.beginPath(); ctx.moveTo(w * 0.08, -hf); ctx.lineTo(w * 0.20, -hf - w * 0.28); ctx.lineTo(w * 0.34, -hf); ctx.stroke()
     }
   }
-}
-
-// Bow faces the direction of travel across the view: if the ship's course is
-// clockwise of its bearing it is crossing to screen-right (no mirror), else left.
-function shipFacing(s) {
-  if (s.course == null || s._bearing == null) return 1
-  return normalizeSigned(s.course - s._bearing) >= 0 ? 1 : -1
-}
-
-// Draw one ship and return its screen hit box (or null if culled/gone).
-// env carries the sky ambient so ships stay legible day and night.
-export function drawShip(ctx, s, x, distanceKm, W, H, horizonY, seaBottomY, exaggeration, nearKm, farKm, env) {
-  const v = activeView()
-  const hd = hullDownState(distanceKm, v.height, SUPERSTRUCTURE_M)
-  if (hd.state === 'gone') return null
-
-  const w = Math.max(MIN_SHIP_PX, apparentWidthPx(s.len, distanceKm, v.fov, W, SIZE_CAP_FRAC))
-  const shdH = w * 0.5                 // approx silhouette height (tallest type ≈ cruise)
-  const det = lodDetail(w)
-  const P = shipPalette(env?.ambient)
-
-  // Vertical: honest baseline at the horizon, nudged down by nearness * exaggeration.
-  const near = nearness(distanceKm, nearKm, farKm)
-  const drop = exaggeration * near * (seaBottomY - horizonY) * 0.9
-  const baseY = horizonY + drop
-  const facing = shipFacing(s)
-
-  ctx.save()
-  ctx.globalAlpha = hazeAlpha(distanceKm, farKm)
-  if (hd.state === 'hulldown') { P.hull = mix(P.hull, PALETTE.haze, 0.35) } // tint the superstructure toward haze
-  ctx.translate(x, baseY)
-  if (facing < 0) ctx.scale(-1, 1)
-  ctx.translate(-w / 2, 0)
-
-  // Hull-down: clip away the lower hull so only the superstructure clears the horizon.
-  if (hd.state === 'hulldown') {
-    const cut = hd.clipFrac * shdH
-    ctx.beginPath(); ctx.rect(-w, -shdH * 2, w * 3, shdH * 2 - cut); ctx.clip()
-  }
-  ;(SILHOUETTES[s.type] || SILHOUETTES.coaster)(ctx, w, det, P)
-  ctx.restore()
-
-  const box = padRect(x - w / 2, baseY - shdH * 1.05, w, shdH * 1.25, 28)
-  return { ref: s.id, ship: s, distanceKm, hullDown: hd.state === 'hulldown', ...box }
 }
 
 function mix(a, b, t) {
