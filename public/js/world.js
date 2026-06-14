@@ -72,13 +72,12 @@ export function createWorld(canvas) {
   let W = 0, H = 0
   function setProjection(view) {
     if (projection) projection.dispose()
-    // TEMP: the cylindrical (cube render-to-target) path renders black in-browser
-    // (runtime issue, still under debugging) — fall back to a plain perspective camera
-    // for ALL views so the wide "max" view at least renders tonight. It distorts at
-    // the edges past ~100° (exactly why CylindricalProjection exists); re-enable the
-    // `view.fov > 100 ? new CylindricalProjection(...)` branch once the black screen
-    // is root-caused from the browser console.
-    projection = new PerspectiveProjection(view, viewEye(view))
+    // DIAGNOSTIC (temporary): re-enable the cylindrical cube path for wide views so we
+    // can capture the black-screen console error. Revert to perspective-only after.
+    projection = view.fov > 100
+      ? new CylindricalProjection(view, viewEye(view))
+      : new PerspectiveProjection(view, viewEye(view))
+    console.log('[proj]', view.label, 'fov', view.fov, '→', projection.constructor.name)
     if (W) projection.resize(W, H)
   }
   function resize(w, h) {

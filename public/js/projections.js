@@ -72,8 +72,17 @@ export class CylindricalProjection {
     this.mat.uniforms.fovY.value = toRad(this.view.fov) * (h / w)
   }
   render(renderer, scene) {
-    this.cubeCam.update(renderer, scene)
-    renderer.render(this.quadScene, this.quadCam)
+    // DIAGNOSTIC (temporary): try/catch + one-shot log to localize the black screen.
+    try {
+      this.cubeCam.update(renderer, scene)
+      renderer.render(this.quadScene, this.quadCam)
+      if (!this._logged) {
+        this._logged = true
+        console.log('[cyl] render ran; cube rt', this.cubeCam.renderTarget && this.cubeCam.renderTarget.width,
+          'fovX', this.mat.uniforms.fovX.value.toFixed(3), 'fovY', this.mat.uniforms.fovY.value.toFixed(3),
+          'eye', this.eye.toArray().map(v => Math.round(v)))
+      }
+    } catch (e) { console.error('[cyl] render threw:', e) }
   }
   eyeGround() { return { e: this.eye.x, n: -this.eye.z } }
   dispose() {
