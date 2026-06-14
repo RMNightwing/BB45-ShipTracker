@@ -252,3 +252,47 @@ export function drawLandfall(ctx, W, H, opacity) {
   ctx.fill()
   ctx.restore()
 }
+
+// A fixed decorative starfield, generated once. x/y are fractions; y is biased to
+// the upper sky. The whole field fades in/out with env.starAlpha.
+const STARS = Array.from({ length: 120 }, () => ({
+  x: Math.random(), y: Math.random() * 0.4, r: 0.5 + Math.random() * 1.2, p: Math.random() * 6.28
+}))
+
+export function drawStars(ctx, W, H, t, env) {
+  if (env.starAlpha <= 0.01) return
+  const y = horizonY(W, H)
+  ctx.save()
+  for (const s of STARS) {
+    const tw = 0.6 + 0.4 * Math.sin(t / 600 + s.p * 10)            // twinkle
+    const a = env.starAlpha * tw * (0.55 + 0.45 * (1 - s.y / 0.4)) // brighter near zenith
+    ctx.fillStyle = `rgba(255,255,245,${a.toFixed(3)})`
+    ctx.beginPath(); ctx.arc(s.x * W, s.y * y, s.r, 0, Math.PI * 2); ctx.fill()
+  }
+  ctx.restore()
+}
+
+// Moon at tonight's real phase, drawn on an offscreen canvas (so the phase carve
+// doesn't punch a hole in the sky behind it), then composited with the night fade.
+let moonCanvas = null
+export function drawMoon(ctx, W, H, t, env) {
+  if (env.starAlpha <= 0.05 || !env.moon) return
+  const { x, y, fraction, waxing } = env.moon
+  const r = Math.max(10, H * 0.022)
+  const size = Math.ceil(r * 2 + 4), cx = size / 2
+  if (!moonCanvas) moonCanvas = document.createElement('canvas')
+  moonCanvas.width = size; moonCanvas.height = size
+  const m = moonCanvas.getContext('2d')
+  m.clearRect(0, 0, size, size)
+  m.fillStyle = 'rgba(245,245,228,1)'
+  m.beginPath(); m.arc(cx, cx, r, 0, Math.PI * 2); m.fill()
+  if (fraction < 0.98) {
+    const offset = (waxing ? -1 : 1) * r * 2 * (1 - fraction) // slide a cut-out across the dark limb
+    m.globalCompositeOperation = 'destination-out'
+    m.beginPath(); m.arc(cx + offset, cx, r, 0, Math.PI * 2); m.fill()
+  }
+  ctx.save()
+  ctx.globalAlpha = env.starAlpha
+  ctx.drawImage(moonCanvas, x - cx, y - cx)
+  ctx.restore()
+}
