@@ -1,6 +1,8 @@
 import { PALETTE, DECK, LANDFALL } from './config.js'
 import { normalizeSigned, projectX } from './geometry.js'
 
+const rgba = (c, a) => `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${a})`
+
 // The horizon sits a bit above mid-screen so there is open water to place ships in.
 export const horizonY = (W, H) => Math.round(H * 0.42)
 
@@ -14,19 +16,22 @@ function horizonPath(ctx, W, H) {
   ctx.quadraticCurveTo(W / 2, y - dip, W, y + dip)
 }
 
-export function drawSky(ctx, W, H, t) {
+export function drawSky(ctx, W, H, t, env) {
   const y = horizonY(W, H)
   const g = ctx.createLinearGradient(0, 0, 0, y)
-  g.addColorStop(0, PALETTE.skyTop); g.addColorStop(1, PALETTE.skyBottom)
+  g.addColorStop(0, env.skyTop); g.addColorStop(1, env.skyBottom)
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, y + 2)
 
-  // Soft sun, low over the SSW horizon (roughly where the view centre is).
-  const sx = W * 0.5, sy = y - H * 0.16
-  const sun = ctx.createRadialGradient(sx, sy, 0, sx, sy, H * 0.22)
-  sun.addColorStop(0, 'rgba(255,248,228,0.95)')
-  sun.addColorStop(0.4, 'rgba(255,240,205,0.35)')
-  sun.addColorStop(1, 'rgba(255,240,205,0)')
-  ctx.fillStyle = sun; ctx.fillRect(0, 0, W, y + 2)
+  if (env.sun.visible) {
+    const sx = env.sun.x, sy = env.sun.y
+    const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, H * 0.22)
+    glow.addColorStop(0, rgba(env.sunTint, 0.95))
+    glow.addColorStop(0.4, rgba(env.sunTint, 0.30))
+    glow.addColorStop(1, rgba(env.sunTint, 0))
+    ctx.fillStyle = glow; ctx.fillRect(0, 0, W, y + 2)
+    ctx.fillStyle = rgba(env.sunTint, 0.9)
+    ctx.beginPath(); ctx.arc(sx, sy, Math.max(6, H * 0.012), 0, Math.PI * 2); ctx.fill()
+  }
 }
 
 export function drawSea(ctx, W, H, t) {
