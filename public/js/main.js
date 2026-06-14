@@ -7,6 +7,7 @@ import { makeFleet, stepFleet } from './sim.js'
 import { fetchWeather, venezuelaVerdict } from './weather.js'
 import { renderWeather, renderVerdict, initControls, showTooltip, trackSticky, setShipsStatus, initViewToggle } from './ui.js'
 import { activeView } from './view.js'
+import { createWorld } from './world.js'
 import { connectRelay } from './relay-client.js'
 import { applyShipMessage, buildShips, pruneStale } from './store.js'
 
@@ -19,15 +20,17 @@ function moonArc(date, W, hY) {
   return { x: W * (0.15 + 0.7 * u), y: hY - arch * hY * 0.7 - hY * 0.05 }
 }
 
-const canvas = document.getElementById('view')
-const ctx = canvas.getContext('2d')
+const overlay = document.getElementById('overlay')
+const ctx = overlay.getContext('2d')
+const world = createWorld(document.getElementById('gl'))
 
 let W = 0, H = 0, dpr = 1
 function resize() {
   dpr = Math.min(window.devicePixelRatio || 1, 2)
-  W = canvas.clientWidth; H = canvas.clientHeight
-  canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr)
+  W = overlay.clientWidth; H = overlay.clientHeight
+  overlay.width = Math.round(W * dpr); overlay.height = Math.round(H * dpr)
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  world.resize(W, H)
 }
 window.addEventListener('resize', resize)
 resize()
@@ -74,8 +77,8 @@ const STICKY_MS = 2000 // how long a hovered ship's details linger after the cur
 let sticky = { id: null, lastSeen: 0 }
 let hitRects = []
 let mouse = { x: -1, y: -1 }
-canvas.addEventListener('mousemove', e => { mouse = { x: e.clientX, y: e.clientY } })
-canvas.addEventListener('mouseleave', () => { mouse = { x: -1, y: -1 } })
+overlay.addEventListener('mousemove', e => { mouse = { x: e.clientX, y: e.clientY } })
+overlay.addEventListener('mouseleave', () => { mouse = { x: -1, y: -1 } })
 
 async function loadWeather() {
   try {
@@ -96,6 +99,7 @@ let last = performance.now()
 function frame(t) {
   const dt = Math.min(0.1, (t - last) / 1000); last = t
   ctx.clearRect(0, 0, W, H)
+  world.render()
   const v = activeView()
   const hY0 = horizonY(W, H)
   const now = new Date()
@@ -158,7 +162,7 @@ function frame(t) {
   // it's been gone STICKY_MS or another ship is hovered.
   const over = mouse.x >= 0 ? shipAtPoint(hitRects, mouse.x, mouse.y) : null
   sticky = trackSticky(sticky, over ? over.ref : null, t, STICKY_MS)
-  canvas.style.cursor = over ? 'pointer' : 'default'
+  overlay.style.cursor = over ? 'pointer' : 'default'
   const shown = sticky.showId != null ? hitRects.find(r => r.ref === sticky.showId) : null
   if (shown) showTooltip(shown, over ? mouse.x : shown.x + shown.w, over ? mouse.y : shown.y)
   else showTooltip(null)

@@ -6,7 +6,9 @@
   <title>BB45 — Blue Bay</title>
   <style>
     html, body { margin: 0; height: 100%; background: #0c1014; overflow: hidden; }
-    #view { display: block; width: 100vw; height: 100vh; }
+    #gl, #overlay { position: fixed; inset: 0; display: block; width: 100vw; height: 100vh; }
+    #gl { z-index: 0; }
+    #overlay { z-index: 1; }
     .panel {
       position: fixed; z-index: 2; color: #eef4f7;
       font: 13px/1.45 -apple-system, "Segoe UI", system-ui, sans-serif;
@@ -35,7 +37,8 @@
   </style>
 </head>
 <body>
-  <canvas id="view"></canvas>
+  <canvas id="gl"></canvas>
+  <canvas id="overlay"></canvas>
 
   <section id="wx" class="panel">
     <h2>Weather</h2>
@@ -62,6 +65,9 @@
 
   <div id="tooltip"></div>
 
+  <script type="importmap">
+  { "imports": { "three": "./vendor/three/three.module.js" } }
+  </script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
