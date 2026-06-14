@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   toRad, toDeg, normalizeSigned, bearingTo, haversineKm, horizonKm,
-  shipHorizonKm, projectX, apparentWidthPx, hullDownState, nearness
+  shipHorizonKm, projectX, apparentWidthPx, hullDownState, nearness, enu
 } from './geometry.js'
 import { VIEWS, LANDFALL } from './config.js'
 
@@ -71,6 +71,15 @@ test('nearness is 1 near, 0 far, clamped', () => {
   near(nearness(1, 4, 55), 1, 1e-9) // clamped
   near(nearness(5, 10, 10), 1, 1e-9)   // farKm == nearKm, inside -> 1
   near(nearness(15, 10, 10), 0, 1e-9)  // farKm == nearKm, outside -> 0
+})
+
+test('enu maps lat/lon to local east/north metres', () => {
+  const o = { lat: 12.135972, lon: -68.989167 }
+  assert.deepEqual(enu(o.lat, o.lon, o.lat, o.lon), { e: 0, n: 0 })
+  const north = enu(o.lat + 0.01, o.lon, o.lat, o.lon)
+  assert.ok(Math.abs(north.n - 1112) < 1 && Math.abs(north.e) < 1e-6)
+  const east = enu(o.lat, o.lon + 0.01, o.lat, o.lon)
+  assert.ok(Math.abs(east.e - 1087) < 1 && Math.abs(east.n) < 1e-6)
 })
 
 test('Venezuela landfall stays in frame in both views', () => {

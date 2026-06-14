@@ -62,3 +62,11 @@ export function nearness(distanceKm, nearKm, farKm) {
   if (farKm <= nearKm) return distanceKm <= nearKm ? 1 : 0
   return Math.max(0, Math.min(1, (farKm - distanceKm) / (farKm - nearKm)))
 }
+
+// Local tangent-plane (equirectangular) projection of lat/lon to east/north
+// metres about an origin. Accurate to well under a metre over the ~40 km view.
+export function enu(lat, lon, lat0, lon0) {
+  const e = toRad(lon - lon0) * Math.cos(toRad(lat0)) * R_KM * 1000
+  const n = toRad(lat - lat0) * R_KM * 1000
+  return { e, n }
+}

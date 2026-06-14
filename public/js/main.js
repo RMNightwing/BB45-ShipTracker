@@ -6,7 +6,7 @@ import { drawShip, shipAtPoint } from './ships.js'
 import { makeFleet, stepFleet } from './sim.js'
 import { fetchWeather, venezuelaVerdict } from './weather.js'
 import { renderWeather, renderVerdict, initControls, showTooltip, trackSticky, setShipsStatus, initViewToggle } from './ui.js'
-import { activeView } from './view.js'
+import { activeView, onViewChange } from './view.js'
 import { createWorld } from './world.js'
 import { connectRelay } from './relay-client.js'
 import { applyShipMessage, buildShips, pruneStale } from './store.js'
@@ -23,6 +23,8 @@ function moonArc(date, W, hY) {
 const overlay = document.getElementById('overlay')
 const ctx = overlay.getContext('2d')
 const world = createWorld(document.getElementById('gl'))
+world.setProjection(activeView())
+onViewChange(v => world.setProjection(v))
 
 let W = 0, H = 0, dpr = 1
 function resize() {
@@ -99,7 +101,7 @@ let last = performance.now()
 function frame(t) {
   const dt = Math.min(0.1, (t - last) / 1000); last = t
   ctx.clearRect(0, 0, W, H)
-  world.render()
+  world.render(t)
   const v = activeView()
   const hY0 = horizonY(W, H)
   const now = new Date()
@@ -115,11 +117,12 @@ function frame(t) {
     cloudPct: wx?.cloud ?? 40
   }
 
-  drawSky(ctx, W, H, t, env)
+  // 3D world renders sky+sea now (Task 3+)
+  // drawSky(ctx, W, H, t, env)
   drawStars(ctx, W, H, t, env)
   drawMoon(ctx, W, H, t, env)
   drawClouds(ctx, W, H, t, env)
-  drawSea(ctx, W, H, t, env)
+  // drawSea(ctx, W, H, t, env)
   const effSl = controls.manual ? controls.sightlineKm : (wx ? wx.sightlineKm : null)
   if (effSl != null) drawLandfall(ctx, W, H, venezuelaVerdict(effSl).opacity)
   drawCompass(ctx, W, H)
