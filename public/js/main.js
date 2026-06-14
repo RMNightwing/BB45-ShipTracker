@@ -1,12 +1,22 @@
 import { DECK, USE_SIM, EXAGGERATION, NEAR_KM, FAR_KM } from './config.js'
 import { bearingTo, haversineKm, projectX } from './geometry.js'
-import { drawSky, drawSea, drawClouds, drawDeck, drawPalms, drawCompass, drawLandfall, horizonY } from './scene.js'
+import { drawSky, drawSea, drawClouds, drawDeck, drawPalms, drawCompass, drawLandfall, horizonY, drawStars, drawMoon } from './scene.js'
+import { sunPosition, moonPhase, skyState, projectCelestial } from './sky.js'
 import { drawShip, shipAtPoint } from './ships.js'
 import { makeFleet, stepFleet } from './sim.js'
 import { fetchWeather, venezuelaVerdict } from './weather.js'
 import { renderWeather, renderVerdict, initControls, showTooltip, trackSticky, setShipsStatus } from './ui.js'
 import { connectRelay } from './relay-client.js'
 import { applyShipMessage, buildShips, pruneStale } from './store.js'
+
+// Stylized slow arc for the moon across the night sky (position is decorative;
+// only its phase is real).
+function moonArc(date, W, hY) {
+  const h = date.getHours() + date.getMinutes() / 60
+  const u = ((h + 12) % 24) / 24
+  const arch = Math.sin(Math.PI * u)
+  return { x: W * (0.15 + 0.7 * u), y: hY - arch * hY * 0.7 - hY * 0.05 }
+}
 
 const canvas = document.getElementById('view')
 const ctx = canvas.getContext('2d')
@@ -84,9 +94,25 @@ let last = performance.now()
 function frame(t) {
   const dt = Math.min(0.1, (t - last) / 1000); last = t
   ctx.clearRect(0, 0, W, H)
-  drawSky(ctx, W, H, t)
-  drawClouds(ctx, W, H, t)
-  drawSea(ctx, W, H, t)
+  const hY0 = horizonY(W, H)
+  const now = new Date()
+  const sp = sunPosition(now, DECK.lat, DECK.lon)
+  const sproj = projectCelestial(sp.azimuth, sp.elevation, DECK.viewBearing, DECK.fov, W, H, hY0)
+  const mp = moonPhase(now)
+  const marc = moonArc(now, W, hY0)
+  const env = {
+    ...skyState(sp.elevation),
+    sun: { x: sproj.x == null ? W / 2 : sproj.x, y: sproj.y, visible: sproj.visible, up: sp.elevation > 0 },
+    moon: { x: marc.x, y: marc.y, fraction: mp.fraction, waxing: mp.waxing },
+    wind: { dir: wx?.windDir ?? 90, kn: wx?.windKn ?? 6 },
+    cloudPct: wx?.cloud ?? 40
+  }
+
+  drawSky(ctx, W, H, t, env)
+  drawStars(ctx, W, H, t, env)
+  drawMoon(ctx, W, H, t, env)
+  drawClouds(ctx, W, H, t, env)
+  drawSea(ctx, W, H, t, env)
   const effSl = controls.manual ? controls.sightlineKm : (wx ? wx.sightlineKm : null)
   if (effSl != null) drawLandfall(ctx, W, H, venezuelaVerdict(effSl).opacity)
   drawCompass(ctx, W, H)
