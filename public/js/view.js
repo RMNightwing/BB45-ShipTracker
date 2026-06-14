@@ -13,3 +13,6 @@ export function setView(name) {
 }
 
 export function onViewChange(cb) { listeners.push(cb) }
+
+// Test-only: clear listeners and restore the default view between tests.
+export function _resetForTest() { active = DEFAULT_VIEW; listeners.length = 0 }

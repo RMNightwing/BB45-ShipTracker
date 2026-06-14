@@ -1,7 +1,9 @@
-import { test } from 'node:test'
+import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { VIEWS, DEFAULT_VIEW } from './config.js'
-import { activeView, activeViewName, setView, onViewChange } from './view.js'
+import { activeView, activeViewName, setView, onViewChange, _resetForTest } from './view.js'
+
+beforeEach(_resetForTest)
 
 test('starts on the default view', () => {
   assert.equal(activeViewName(), DEFAULT_VIEW)
@@ -15,10 +17,9 @@ test('setView switches and notifies listeners', () => {
   assert.equal(activeViewName(), 'max')
   assert.equal(activeView(), VIEWS.max)
   assert.equal(seen, 'max')
-  setView('main') // restore for other tests
 })
 
 test('setView ignores unknown names', () => {
   setView('nope')
-  assert.equal(activeViewName(), 'main')
+  assert.equal(activeViewName(), DEFAULT_VIEW)
 })
