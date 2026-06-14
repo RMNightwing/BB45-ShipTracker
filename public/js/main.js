@@ -101,7 +101,6 @@ let last = performance.now()
 function frame(t) {
   const dt = Math.min(0.1, (t - last) / 1000); last = t
   ctx.clearRect(0, 0, W, H)
-  world.render(t)
   const v = activeView()
   const hY0 = horizonY(W, H)
   const now = new Date()
@@ -119,12 +118,15 @@ function frame(t) {
 
   // 3D world renders sky+sea now (Task 3+)
   // drawSky(ctx, W, H, t, env)
-  drawStars(ctx, W, H, t, env)
-  drawMoon(ctx, W, H, t, env)
-  drawClouds(ctx, W, H, t, env)
+  // handled by 3D sky + fog now (Task 4); landfall via fog (Task 7+)
+  // drawStars(ctx, W, H, t, env)
+  // drawMoon(ctx, W, H, t, env)
+  // drawClouds(ctx, W, H, t, env)
   // drawSea(ctx, W, H, t, env)
   const effSl = controls.manual ? controls.sightlineKm : (wx ? wx.sightlineKm : null)
-  if (effSl != null) drawLandfall(ctx, W, H, venezuelaVerdict(effSl).opacity)
+  // if (effSl != null) drawLandfall(ctx, W, H, venezuelaVerdict(effSl).opacity)
+  world.updateEnv({ sunAz: sp.azimuth, sunEl: sp.elevation, sightlineKm: effSl })
+  world.render(t)
   drawCompass(ctx, W, H)
 
   if (controls.live) {
