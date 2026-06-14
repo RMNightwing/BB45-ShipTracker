@@ -126,7 +126,8 @@ function frame(t) {
   // drawSea(ctx, W, H, t, env)
   const effSl = controls.manual ? controls.sightlineKm : (wx ? wx.sightlineKm : null)
   // if (effSl != null) drawLandfall(ctx, W, H, venezuelaVerdict(effSl).opacity)
-  world.updateEnv({ sunAz: sp.azimuth, sunEl: sp.elevation, sightlineKm: effSl })
+  world.updateEnv({ sunAz: sp.azimuth, sunEl: sp.elevation, sightlineKm: effSl,
+    starAlpha: env.starAlpha, windKn: wx?.windKn })
   world.render(t)
 
   if (controls.live) {

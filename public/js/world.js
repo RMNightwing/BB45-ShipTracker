@@ -39,6 +39,29 @@ export function createWorld(canvas) {
   scene.fog = new THREE.FogExp2(0x9fb6c8, fogDensity(40))
   const sunV = new THREE.Vector3()
 
+  // Day/night backdrop + fog colors, lerped by starAlpha in updateEnv. By day the
+  // Sky mesh covers the background; at deep night the Sky is hidden and these show.
+  const DAY_BG = new THREE.Color(0x8fb6e6), NIGHT_BG = new THREE.Color(0x05070d)
+  const DAY_FOG = new THREE.Color(0x9fb6c8), NIGHT_FOG = new THREE.Color(0x0a0e18)
+
+  // Fixed starfield on a large dome; opacity driven by env.starAlpha. Deterministic
+  // scatter (golden-ratio sequence) so positions are stable without Math.random.
+  const starGeo = new THREE.BufferGeometry()
+  const starN = 1200, starPos = new Float32Array(starN * 3)
+  for (let i = 0; i < starN; i++) {
+    const th = i * 2.399963229      // golden angle (rad)
+    const ph = Math.acos(2 * ((i * 0.6180339887) % 1) - 1)
+    const R = 50000
+    starPos[i * 3] = R * Math.sin(ph) * Math.cos(th)
+    starPos[i * 3 + 1] = Math.abs(R * Math.cos(ph))   // upper hemisphere only
+    starPos[i * 3 + 2] = R * Math.sin(ph) * Math.sin(th)
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3))
+  const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({
+    color: 0xfffff5, size: 120, sizeAttenuation: true, transparent: true, opacity: 0, fog: false
+  }))
+  scene.add(stars)
+
   let projection = null
   let W = 0, H = 0
   function setProjection(view) {
@@ -67,6 +90,13 @@ export function createWorld(canvas) {
     sunLight.position.copy(sunV).multiplyScalar(10000)
     sunLight.intensity = Math.max(0.05, Math.sin(Math.max(0, el)) * 1.2)
     if (env.sightlineKm != null) scene.fog.density = fogDensity(env.sightlineKm)
+    const night = env.starAlpha ?? 0
+    scene.background.copy(DAY_BG).lerp(NIGHT_BG, night)
+    scene.fog.color.copy(DAY_FOG).lerp(NIGHT_FOG, night)
+    stars.material.opacity = night
+    sky.visible = night < 0.95                          // hide the daytime sky model at deep night
+    const windScale = 0.5 + (env.windKn ?? 6) / 12      // stronger wind → choppier water
+    water.material.uniforms.distortionScale.value = 3.0 * windScale
   }
 
   const shipLayer = new THREE.Group(); scene.add(shipLayer)
