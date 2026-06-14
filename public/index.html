@@ -17,7 +17,14 @@
     }
     #wx { top: 14px; left: 14px; min-width: 150px; }
     #see { top: 14px; right: 14px; min-width: 190px; }
-    #cal { bottom: 14px; left: 14px; min-width: 170px; }
+    #cal { bottom: 14px; left: 14px; min-width: 170px; display: none; }
+    #toggles { position: fixed; z-index: 2; bottom: 14px; right: 14px; display: flex; gap: 8px; }
+    #toggles button {
+      cursor: pointer; color: #eef4f7; background: rgba(12, 20, 26, 0.55); backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; padding: 6px 12px;
+      font: 12px -apple-system, "Segoe UI", system-ui, sans-serif;
+    }
+    #toggles button.on { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.40); }
     .panel h2 { margin: 0 0 6px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; opacity: .7; }
     .panel .row { display: flex; justify-content: space-between; gap: 14px; }
     #see input[type=range], #cal input[type=range] { width: 100%; }
@@ -47,7 +54,7 @@
   </section>
 
   <section id="see" class="panel">
-    <h2>How far you can see</h2>
+    <h2>View</h2>
     <div id="verdict">—</div>
     <div class="row" style="margin-top:8px"><span>Sightline</span><span id="sl-val">— km</span></div>
     <input id="sl" type="range" min="2" max="200" step="1" value="40">
@@ -73,6 +80,11 @@
     <div class="row" style="margin-top:6px"><span>Haze</span><span id="haze-val">—</span></div>
     <input id="haze" type="range" min="0" max="1" step="0.05" value="0.4">
   </section>
+
+  <div id="toggles">
+    <button id="t-view" data-on="true">View</button>
+    <button id="t-cal" data-on="false">Calibration</button>
+  </div>
 
   <div id="tooltip"></div>
 

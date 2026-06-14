@@ -89,6 +89,29 @@ export function initViewToggle() {
   sync()
 }
 
+// Show/hide the View (#see) and Calibration (#cal) panels via the bottom-right toolbar
+// buttons and the 'v' / 'c' keys. Initial state comes from each button's data-on attr.
+export function initPanelToggles() {
+  const defs = [
+    { key: 'v', btn: 't-view', panel: 'see' },
+    { key: 'c', btn: 't-cal', panel: 'cal' }
+  ]
+  for (const d of defs) {
+    const btn = document.getElementById(d.btn), panel = document.getElementById(d.panel)
+    if (!btn || !panel) continue
+    let shown = btn.dataset.on === 'true'
+    const apply = () => { panel.style.display = shown ? '' : 'none'; btn.classList.toggle('on', shown) }
+    d.toggle = () => { shown = !shown; apply() }
+    btn.addEventListener('click', d.toggle)
+    apply()
+  }
+  window.addEventListener('keydown', e => {
+    if (e.target.matches && e.target.matches('input, textarea, button')) return
+    const d = defs.find(d => d.key === e.key.toLowerCase())
+    if (d && d.toggle) d.toggle()
+  })
+}
+
 export function showTooltip(hit, mx, my) {
   const el = document.getElementById('tooltip')
   if (!hit) { el.style.opacity = '0'; return }

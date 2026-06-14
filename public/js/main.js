@@ -5,7 +5,7 @@ import { sunPosition, skyState } from './sky.js'
 import { shipAtPoint, padRect } from './ships.js'
 import { makeFleet, stepFleet } from './sim.js'
 import { fetchWeather } from './weather.js'
-import { renderWeather, renderVerdict, initControls, showTooltip, trackSticky, setShipsStatus, initViewToggle } from './ui.js'
+import { renderWeather, renderVerdict, initControls, showTooltip, trackSticky, setShipsStatus, initViewToggle, initPanelToggles } from './ui.js'
 import { activeView, onViewChange } from './view.js'
 import { createWorld } from './world.js'
 import { connectRelay } from './relay-client.js'
@@ -59,6 +59,7 @@ const controls = initControls(() => {
   syncLive(controls.live)
 }, { sizeGain: SIZE_GAIN, depthSpread: DEPTH_SPREAD, hazeStrength: HAZE_STRENGTH })
 initViewToggle()
+initPanelToggles()
 
 if (!USE_SIM) { // config asked to start live
   controls.live = true
