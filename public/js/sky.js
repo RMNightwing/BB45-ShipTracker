@@ -28,3 +28,16 @@ export function sunPosition(date, lat, lon) {
   const el = Math.asin(Math.sin(phi) * Math.sin(c.dec) + Math.cos(phi) * Math.cos(c.dec) * Math.cos(H))
   return { azimuth: (az / rad + 180 + 360) % 360, elevation: el / rad }
 }
+
+const SYNODIC = 29.530588853
+const KNOWN_NEW = Date.UTC(2000, 0, 6, 18, 14) / dayMs // days of a known new moon
+
+// Approximate lunar phase. `fraction` is the illuminated fraction (0=new, 1=full);
+// `waxing` is true on the way to full (lit limb on one side vs the other). Good to
+// ~1 day — enough to draw the right crescent/gibbous.
+export function moonPhase(date) {
+  const days = date.valueOf() / dayMs - KNOWN_NEW
+  const phase = (((days % SYNODIC) + SYNODIC) % SYNODIC) / SYNODIC // 0=new .. 0.5=full
+  const fraction = (1 - Math.cos(2 * Math.PI * phase)) / 2
+  return { phase, fraction, waxing: phase < 0.5 }
+}
