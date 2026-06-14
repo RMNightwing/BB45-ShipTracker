@@ -42,6 +42,7 @@ export function createWorld(canvas) {
   let projection = null
   let W = 0, H = 0
   function setProjection(view) {
+    if (projection) projection.dispose()
     projection = view.fov > 100
       ? new CylindricalProjection(view, viewEye(view))
       : new PerspectiveProjection(view, viewEye(view))

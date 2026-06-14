@@ -21,6 +21,7 @@ export class PerspectiveProjection {
     this._w = w; this._h = h
   }
   render(renderer, scene) { renderer.render(scene, this.camera) }
+  dispose() {}
   // World position (THREE.Vector3) → screen px (CSS pixels). visible=false off-screen/behind.
   project(worldPos) {
     const v = worldPos.clone().project(this.camera)
@@ -71,6 +72,11 @@ export class CylindricalProjection {
   render(renderer, scene) {
     this.cubeCam.update(renderer, scene)
     renderer.render(this.quadScene, this.quadCam)
+  }
+  dispose() {
+    this.cubeCam.renderTarget.dispose()
+    this.mat.dispose()
+    this.quadScene.children[0].geometry.dispose()
   }
   // World position (THREE.Vector3) → screen px, matching the composite's sampling.
   project(worldPos) {
