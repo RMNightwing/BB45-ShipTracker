@@ -4,7 +4,7 @@ import { drawOverlay } from './overlay.js'
 import { sunPosition, skyState } from './sky.js'
 import { shipAtPoint, padRect } from './ships.js'
 import { makeFleet, stepFleet } from './sim.js'
-import { fetchWeather, venezuelaVerdict } from './weather.js'
+import { fetchWeather } from './weather.js'
 import { renderWeather, renderVerdict, initControls, showTooltip, trackSticky, setShipsStatus, initViewToggle } from './ui.js'
 import { activeView, onViewChange } from './view.js'
 import { createWorld } from './world.js'
@@ -100,7 +100,6 @@ function frame(t) {
   const effSl = controls.manual ? controls.sightlineKm : (wx ? wx.sightlineKm : null)
   world.updateEnv({ sunAz: sp.azimuth, sunEl: sp.elevation, sightlineKm: effSl,
     starAlpha: env.starAlpha, windKn: wx?.windKn })
-  world.render(t)
 
   if (controls.live) {
     pruneStale(store, performance.now(), SHIP_TTL)
@@ -126,6 +125,7 @@ function frame(t) {
     ships.filter(s => s._distanceKm <= Math.min(FAR_KM, sightline)),
     { ambient: env.ambient, deckHeight: v.height }
   )
+  world.render(t)
   hitRects = world.shipScreenRects().map(r => ({ ...r, ...padRect(r.x - 14, r.y - 14, 28, 28, 28) }))
 
   // Sticky hover: details follow the held ship after the cursor leaves, until

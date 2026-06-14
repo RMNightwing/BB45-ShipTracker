@@ -60,14 +60,3 @@ export const SKY = [
   { el: -18, skyTop:[8,10,24],     skyBottom:[14,18,38],    seaTop:[8,12,22],     seaBottom:[4,7,16],     horizon:[12,16,30],  sunTint:[80,90,130],   ambient:0.10, starAlpha:1    }
 ]
 
-// Palette.
-export const PALETTE = {
-  skyTop: '#7fb6e6', skyBottom: '#dceaf3',
-  seaTop: '#bcd6df', seaBottom: '#3f7d92',
-  horizon: '#2c5b6b',
-  ship: '#1e3a44',
-  haze: '#cfe0e8',
-  travertine: '#efe9dd',
-  glass: 'rgba(210,230,235,0.10)',
-  palm: 'rgba(20,30,28,0.55)'
-}
