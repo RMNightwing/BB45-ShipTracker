@@ -1,8 +1,10 @@
 import * as THREE from 'three'
 import { Water } from '../vendor/three/Water.js'
 import { Sky } from '../vendor/three/Sky.js'
-import { enu, toRad, hullDownState, fannedPlacement } from './geometry.js'
-import { VIEWS, DEFAULT_VIEW, SUPERSTRUCTURE_M, EXAGGERATION, NEAR_KM, FAR_KM } from './config.js'
+import { enu, toRad, hullDownState } from './geometry.js'
+import { VIEWS, DEFAULT_VIEW, SUPERSTRUCTURE_M, NEAR_KM, FAR_KM,
+  SIZE_GAIN, SIZE_CONSTANCY, MIN_ANGLE, MAX_ANGLE, DEPTH_SPREAD, HAZE_STRENGTH, HAZE_FLOOR } from './config.js'
+import { apparentAngle, renderedDistanceKm, shipClarity } from './perception.js'
 import { makeShipMesh, makeWake, shipMaterials } from './ship-meshes.js'
 import { PerspectiveProjection, CylindricalProjection } from './projections.js'
 import { fogDensity } from './projection-math.js'
@@ -113,6 +115,10 @@ export function createWorld(canvas) {
   // Caller sets s._distanceKm and s._enu (ENU vs DEFAULT_VIEW origin) on each ship.
   function updateShips(ships, env) {
     const eye = projection ? projection.eyeGround() : { e: 0, n: 0 }
+    const sizeGain = env.sizeGain ?? SIZE_GAIN
+    const depthSpread = env.depthSpread ?? DEPTH_SPREAD
+    const hazeStrength = env.hazeStrength ?? HAZE_STRENGTH
+    const haze = scene.fog.color                       // tint ships fade toward
     const seen = new Set()
     for (const s of ships) {
       const hd = hullDownState(s._distanceKm, env.deckHeight, SUPERSTRUCTURE_M)
@@ -128,24 +134,32 @@ export function createWorld(canvas) {
         sp.userData.materials = shipMaterials(sp)
         for (const m of sp.userData.materials) {
           m.clippingPlanes = [sp.userData.clip]
-          if (m.emissive) m.emissive.setHex(0x223038)   // fixed moonlit tint; only intensity varies per frame
+          m.fog = false                                // ships use perceptual haze, not scene FogExp2
+          m.userData.baseColor = m.color.clone()       // remember the un-hazed colour
+          if (m.emissive) m.emissive.setHex(0x223038)  // fixed moonlit tint; only intensity varies
+          m.needsUpdate = true
         }
         sp.add(makeWake(len, s.kn))
         shipLayer.add(sp); meshes.set(s.id, sp)
       }
-      // Fan-out: pull near ships closer along the sight-ray (lower in frame), scaled
-      // down so bearing + apparent size stay exact. Hull-down uses the TRUE distance.
-      const p = fannedPlacement(eye, { e: s._enu.e, n: s._enu.n }, s._distanceKm, EXAGGERATION, NEAR_KM, FAR_KM)
-      sp.position.set(p.e, 0, -p.n)
+      // Perceptual placement: true bearing fixes the azimuth ray; the depth rule sets
+      // how far down it the ship sits (vertical position); the size rule sets its
+      // on-screen angular size. Bearing stays exact; size/position are independent.
+      const dPrimeKm = renderedDistanceKm(s._distanceKm, depthSpread, NEAR_KM, FAR_KM)
+      const f = dPrimeKm / Math.max(0.001, s._distanceKm)
+      sp.position.set(eye.e + f * (s._enu.e - eye.e), 0, -(eye.n + f * (s._enu.n - eye.n)))
       sp.rotation.y = -toRad(s.course ?? s.cog ?? 0)
-      sp.scale.setScalar(p.scale)
-      // Hull-down: raise the world-space clip plane so the lower hull is cut as the
-      // ship recedes (keep y ≥ clipFrac × world height).
-      const worldH = sp.userData.heightM * p.scale
+      const ang = apparentAngle(len, s._distanceKm, sizeGain, SIZE_CONSTANCY, MIN_ANGLE, MAX_ANGLE)
+      const scale = ang * (dPrimeKm * 1000) / len
+      sp.scale.setScalar(scale)
+      // Hull-down (TRUE distance): raise the world clip plane to cut the lower hull.
+      const worldH = sp.userData.heightM * scale
       sp.userData.clip.constant = -(hd.clipFrac * worldH)
-      // Night legibility: lift an emissive floor as ambient falls.
+      // Perceptual haze (TRUE distance) + night emissive floor.
+      const clarity = shipClarity(s._distanceKm, FAR_KM, hazeStrength, HAZE_FLOOR)
       const emis = Math.max(0, 0.5 - (env.ambient ?? 1) * 0.5)
       for (const m of sp.userData.materials) {
+        m.color.copy(m.userData.baseColor).lerp(haze, 1 - clarity)
         if (m.emissive) m.emissiveIntensity = emis
       }
       sp.userData.ship = s; sp.userData.hullDown = hd.state === 'hulldown'
