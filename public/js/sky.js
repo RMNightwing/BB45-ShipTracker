@@ -75,10 +75,11 @@ const SKY_VTOP = 50 // elevation (deg) that maps to the top of the sky band
 
 // Screen position for a celestial body. x from true azimuth (exact, via projectX);
 // y from a stylized elevation map (0° at the horizon, ~SKY_VTOP° near the top).
-// visible is false below the horizon or outside the view arc.
+// Not visible outside the view arc; the -1° threshold keeps a body lit through
+// the ~0.6° of atmospheric refraction (and its afterglow) at the horizon.
 export function projectCelestial(azimuth, elevation, viewBearing, fov, W, H, horizonY) {
   const x = projectX(azimuth, viewBearing, fov, W)
   const up = Math.max(0, Math.min(1, elevation / SKY_VTOP))
   const y = horizonY - up * horizonY * 0.92
-  return { x: x == null ? null : x, y, visible: x != null && elevation > -1 }
+  return { x, y, visible: x != null && elevation > -1 }
 }
