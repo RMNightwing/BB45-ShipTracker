@@ -4,7 +4,7 @@ import { Sky } from './vendor/three/Sky.js'
 import { enu, toRad, hullDownState } from './geometry.js'
 import { VIEWS, DEFAULT_VIEW, SUPERSTRUCTURE_M } from './config.js'
 import { makeShipSprite, shipTexture } from './ship-sprites.js'
-import { PerspectiveProjection } from './projections.js'
+import { PerspectiveProjection, CylindricalProjection } from './projections.js'
 import { fogDensity } from './projection-math.js'
 
 // One fixed ENU origin for the whole world (the main viewpoint). Each view's
@@ -42,7 +42,9 @@ export function createWorld(canvas) {
   let projection = null
   let W = 0, H = 0
   function setProjection(view) {
-    projection = new PerspectiveProjection(view, viewEye(view))
+    projection = view.fov > 100
+      ? new CylindricalProjection(view, viewEye(view))
+      : new PerspectiveProjection(view, viewEye(view))
     if (W) projection.resize(W, H)
   }
   function resize(w, h) {
