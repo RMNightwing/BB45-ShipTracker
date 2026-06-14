@@ -63,20 +63,6 @@ export function nearness(distanceKm, nearKm, farKm) {
   return Math.max(0, Math.min(1, (farKm - distanceKm) / (farKm - nearKm)))
 }
 
-// Fan-out placement: pull a near ship closer along its own sight-ray from the eye so
-// it sits lower in the frame, scaling it down by the same factor so its bearing and
-// apparent (angular) size stay exact. Far ships (nearness 0) are unchanged — and
-// hull-down, computed from the TRUE distance, stays physically exact. eye/ship are
-// ground points {e,n} in the same ENU frame. Returns {e,n,scale}.
-export function fannedPlacement(eye, ship, distanceKm, exaggeration, nearKm, farKm) {
-  const f = 1 - exaggeration * nearness(distanceKm, nearKm, farKm)
-  return {
-    e: eye.e + f * (ship.e - eye.e),
-    n: eye.n + f * (ship.n - eye.n),
-    scale: f
-  }
-}
-
 // Local tangent-plane (equirectangular) projection of lat/lon to east/north
 // metres about an origin. Accurate to well under a metre over the ~40 km view.
 export function enu(lat, lon, lat0, lon0) {
