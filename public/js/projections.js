@@ -1,6 +1,6 @@
 import * as THREE from 'three'
-import { toRad } from './geometry.js'
-import { vFovFromHFov, cylindricalProject } from './projection-math.js'
+import { toRad, normalizeSigned } from './geometry.js'
+import { vFovFromHFov, cylindricalProject, bearingOfDir, tileAzOffset, tileIndexForAz } from './projection-math.js'
 
 // Perspective projection for the narrow main view: a plain PerspectiveCamera.
 // eyeENU = {e, n} of the viewpoint relative to the world origin; view.height m above sea.
@@ -35,9 +35,12 @@ export class PerspectiveProjection {
   }
 }
 
+// SUPERSEDED by TiledPanoramaProjection (below). The cube path renders black in-browser:
+// the render runs with no shader error, but the cube comes up empty — the Water reflector
+// does its own render-target swaps inside the 6 cube-face passes and leaves the cube blank
+// (and a single planar reflection rendered into a cube is wrong anyway). Kept for reference.
 // Wide-view projection: render the scene into a world-aligned cube map at the eye,
-// then a fullscreen quad samples it by (azimuth, elevation). Materials, fog, and
-// reflections all work unmodified. project() mirrors the sampling for HUD/hover.
+// then a fullscreen quad samples it by (azimuth, elevation). project() mirrors the sampling.
 export class CylindricalProjection {
   constructor(view, eyeENU) {
     this.view = view
@@ -72,17 +75,8 @@ export class CylindricalProjection {
     this.mat.uniforms.fovY.value = toRad(this.view.fov) * (h / w)
   }
   render(renderer, scene) {
-    // DIAGNOSTIC (temporary): try/catch + one-shot log to localize the black screen.
-    try {
-      this.cubeCam.update(renderer, scene)
-      renderer.render(this.quadScene, this.quadCam)
-      if (!this._logged) {
-        this._logged = true
-        console.log('[cyl] render ran; cube rt', this.cubeCam.renderTarget && this.cubeCam.renderTarget.width,
-          'fovX', this.mat.uniforms.fovX.value.toFixed(3), 'fovY', this.mat.uniforms.fovY.value.toFixed(3),
-          'eye', this.eye.toArray().map(v => Math.round(v)))
-      }
-    } catch (e) { console.error('[cyl] render threw:', e) }
+    this.cubeCam.update(renderer, scene)
+    renderer.render(this.quadScene, this.quadCam)
   }
   eyeGround() { return { e: this.eye.x, n: -this.eye.z } }
   dispose() {
@@ -94,5 +88,71 @@ export class CylindricalProjection {
   project(worldPos) {
     const d = worldPos.clone().sub(this.eye)
     return cylindricalProject({ x: d.x, y: d.y, z: d.z }, this.view, this._w, this._h / 2)
+  }
+}
+
+// Wide-view projection without the fragile cube path: render the scene as N narrow
+// perspective slices side by side (each a real PerspectiveCamera yawed across the view
+// bearing). Water/fog/ships/reflections all work exactly like the main view, and each
+// ~fov/N° slice has almost no edge stretch — so the full sweep is preserved undistorted.
+export class TiledPanoramaProjection {
+  constructor(view, eyeENU, tiles = 4) {
+    this.view = view
+    this.tiles = tiles
+    this.eye = new THREE.Vector3(eyeENU.e, view.height, -eyeENU.n)
+    const hFov = view.fov / tiles
+    this.cameras = []
+    for (let i = 0; i < tiles; i++) {
+      const cam = new THREE.PerspectiveCamera(50, 1, 1, 80000)
+      cam.position.copy(this.eye)
+      cam.rotation.order = 'YXZ'                 // yaw to this slice's bearing, level pitch
+      cam.rotation.y = -toRad(view.viewBearing + tileAzOffset(i, view.fov, tiles))
+      cam.userData.hFov = hFov
+      this.cameras.push(cam)
+    }
+    this._w = 1; this._h = 1
+  }
+  // Integer pixel bounds of slice i, tiling the width exactly (no gaps from rounding).
+  _bounds(i) {
+    const x0 = Math.round(i * this._w / this.tiles)
+    const x1 = Math.round((i + 1) * this._w / this.tiles)
+    return { x0, w: x1 - x0 }
+  }
+  resize(w, h) {
+    this._w = w; this._h = h
+    for (let i = 0; i < this.tiles; i++) {
+      const cam = this.cameras[i], b = this._bounds(i)
+      cam.aspect = b.w / h
+      cam.fov = vFovFromHFov(cam.userData.hFov, cam.aspect)
+      cam.updateProjectionMatrix()
+    }
+  }
+  render(renderer, scene) {
+    renderer.setScissorTest(true)               // each slice clears + draws only its strip
+    for (let i = 0; i < this.tiles; i++) {
+      const b = this._bounds(i)
+      renderer.setViewport(b.x0, 0, b.w, this._h)
+      renderer.setScissor(b.x0, 0, b.w, this._h)
+      renderer.render(scene, this.cameras[i])
+    }
+    renderer.setScissorTest(false)
+    renderer.setViewport(0, 0, this._w, this._h)
+  }
+  eyeGround() { return { e: this.eye.x, n: -this.eye.z } }
+  dispose() {}
+  // World position → screen px: find the slice its bearing falls in, project with that
+  // slice's camera, then offset into the slice. Used for hover/tooltip rects.
+  project(worldPos) {
+    const d = worldPos.clone().sub(this.eye)
+    const relAz = normalizeSigned(bearingOfDir({ x: d.x, y: d.y, z: d.z }) - this.view.viewBearing)
+    const i = tileIndexForAz(relAz, this.view.fov, this.tiles)
+    if (i < 0) return { x: 0, y: 0, visible: false }
+    const v = worldPos.clone().project(this.cameras[i])
+    const b = this._bounds(i)
+    return {
+      x: b.x0 + (v.x * 0.5 + 0.5) * b.w,
+      y: (-v.y * 0.5 + 0.5) * this._h,
+      visible: v.z < 1 && Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1
+    }
   }
 }

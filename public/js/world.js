@@ -6,7 +6,7 @@ import { VIEWS, DEFAULT_VIEW, SUPERSTRUCTURE_M, NEAR_KM, FAR_KM,
   SIZE_GAIN, SIZE_CONSTANCY, MIN_ANGLE, MAX_ANGLE, DEPTH_SPREAD, HAZE_STRENGTH, HAZE_FLOOR } from './config.js'
 import { apparentAngle, renderedDistanceKm, shipClarity } from './perception.js'
 import { makeShipMesh, makeWake, shipMaterials } from './ship-meshes.js'
-import { PerspectiveProjection, CylindricalProjection } from './projections.js'
+import { PerspectiveProjection, TiledPanoramaProjection } from './projections.js'
 import { fogDensity } from './projection-math.js'
 
 // One fixed ENU origin for the whole world (the main viewpoint). Each view's
@@ -72,12 +72,11 @@ export function createWorld(canvas) {
   let W = 0, H = 0
   function setProjection(view) {
     if (projection) projection.dispose()
-    // DIAGNOSTIC (temporary): re-enable the cylindrical cube path for wide views so we
-    // can capture the black-screen console error. Revert to perspective-only after.
+    // Wide views (the full sweep) render as a tiled panorama; the narrow main view stays a
+    // plain perspective camera. (The cube CylindricalProjection is superseded — see projections.js.)
     projection = view.fov > 100
-      ? new CylindricalProjection(view, viewEye(view))
+      ? new TiledPanoramaProjection(view, viewEye(view))
       : new PerspectiveProjection(view, viewEye(view))
-    console.log('[proj]', view.label, 'fov', view.fov, '→', projection.constructor.name)
     if (W) projection.resize(W, H)
   }
   function resize(w, h) {
