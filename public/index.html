@@ -19,7 +19,7 @@
     #see { top: 14px; right: 14px; min-width: 190px; }
     .panel h2 { margin: 0 0 6px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; opacity: .7; }
     .panel .row { display: flex; justify-content: space-between; gap: 14px; }
-    #see input[type=range] { width: 100%; }
+    #see input[type=range], #cal input[type=range] { width: 100%; }
     .btns { display: flex; gap: 8px; margin-top: 8px; }
     .btns button {
       flex: 1; cursor: pointer; color: #eef4f7; background: rgba(255,255,255,0.08);
@@ -61,6 +61,16 @@
       <button id="view-toggle">🔭 Full sweep</button>
     </div>
     <div class="row" style="margin-top:6px"><span>Ships</span><span id="ships-status">simulated</span></div>
+  </section>
+
+  <section id="cal" class="panel">
+    <h2>Calibration</h2>
+    <div class="row"><span>Size</span><span id="gain-val">—</span></div>
+    <input id="gain" type="range" min="0.0004" max="0.005" step="0.0001" value="0.0016">
+    <div class="row" style="margin-top:6px"><span>Spread</span><span id="spread-val">—</span></div>
+    <input id="spread" type="range" min="0" max="0.95" step="0.05" value="0.7">
+    <div class="row" style="margin-top:6px"><span>Haze</span><span id="haze-val">—</span></div>
+    <input id="haze" type="range" min="0" max="1" step="0.05" value="0.4">
   </section>
 
   <div id="tooltip"></div>
