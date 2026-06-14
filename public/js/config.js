@@ -26,6 +26,15 @@ export const USE_SIM = true
 // floating below it.
 export const FAR_KM = 40
 
+// Vertical fan-out (the only stylized axis). Nearer ships are pulled closer along
+// their own sight-ray so they sit lower in the frame, then scaled down by the same
+// factor so bearing and apparent size stay EXACT. 0 = physically true (ships pile at
+// the horizon); higher = more dramatic foreground spread. Tune by eye in-browser.
+export const EXAGGERATION = 0.7
+// Distance (km) at/below which a ship gets the full nudge; nearness ramps 1→0 from
+// here out to FAR_KM.
+export const NEAR_KM = 2
+
 // Minimum drawn ship width (px), so the farthest vessel is a faint smudge on the
 // horizon rather than a sub-pixel that vanishes before the honest hull-down cull.
 export const MIN_SHIP_PX = 8
