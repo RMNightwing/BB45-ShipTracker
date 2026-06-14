@@ -68,6 +68,7 @@ export function createWorld(canvas) {
 
   const shipLayer = new THREE.Group(); scene.add(shipLayer)
   const sprites = new Map()
+  // Caller must set s._distanceKm and s._enu on each ship before calling.
   // Texture rebuilt per frame — fine for the ~9-ship fleet; cache later if needed.
   function updateShips(ships, env) {
     const seen = new Set()
@@ -86,8 +87,12 @@ export function createWorld(canvas) {
       sp.material.needsUpdate = true
       sp.userData.ship = s; sp.userData.hullDown = hd.state === 'hulldown'
     }
-    for (const [id, sp] of sprites) if (!seen.has(id)) {
-      shipLayer.remove(sp); if (sp.material.map) sp.material.map.dispose(); sp.material.dispose(); sprites.delete(id)
+    for (const [id, sp] of sprites) {
+      if (seen.has(id)) continue
+      shipLayer.remove(sp)
+      if (sp.material.map) sp.material.map.dispose()
+      sp.material.dispose()
+      sprites.delete(id)
     }
   }
   // Screen rects for overlay hover/tooltip, via the active projection.

@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { SILHOUETTES, shipPalette, lodDetail } from './ships.js'
 
-const TEX_W = 256                       // texture resolution; silhouette drawn into the top
+const TEX_W = 256                       // texture resolution; silhouette occupies the upper ~80%, bottom rows transparent
 // Render a ship's silhouette into an offscreen canvas, cropping the lower hull by
 // clipFrac (hull-down) so only the superstructure shows. Returns a CanvasTexture.
 export function shipTexture(ship, ambient, clipFrac) {

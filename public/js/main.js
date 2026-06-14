@@ -1,4 +1,4 @@
-import { USE_SIM, EXAGGERATION, NEAR_KM, FAR_KM, VIEWS } from './config.js'
+import { USE_SIM, EXAGGERATION, NEAR_KM, FAR_KM, VIEWS, DEFAULT_VIEW } from './config.js'
 import { bearingTo, haversineKm, projectX, enu } from './geometry.js'
 import { drawSky, drawSea, drawClouds, drawDeck, drawPalms, drawCompass, drawLandfall, horizonY, drawStars, drawMoon } from './scene.js'
 import { sunPosition, moonPhase, skyState, projectCelestial } from './sky.js'
@@ -141,14 +141,13 @@ function frame(t) {
     ships = fleet
   }
 
-  const hY = horizonY(W, H)
   const sightline = controls.sightlineKm
   // Place ships in the 3D world at their true ENU positions; the projection + fog
   // give size, depth, and haze. Hover rects come back projected to screen.
   for (const s of ships) {
     s._distanceKm = haversineKm(v.lat, v.lon, s.lat, s.lon)
     s._bearing = bearingTo(v.lat, v.lon, s.lat, s.lon)
-    s._enu = enu(s.lat, s.lon, VIEWS.main.lat, VIEWS.main.lon)
+    s._enu = enu(s.lat, s.lon, VIEWS[DEFAULT_VIEW].lat, VIEWS[DEFAULT_VIEW].lon)
   }
   world.updateShips(
     ships.filter(s => s._distanceKm <= Math.min(FAR_KM, sightline)),
