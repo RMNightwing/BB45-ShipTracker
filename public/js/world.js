@@ -39,26 +39,29 @@ export function createWorld(canvas) {
   scene.fog = new THREE.FogExp2(0x9fb6c8, fogDensity(40))
   const sunV = new THREE.Vector3()
 
-  // Day/night backdrop + fog colors, lerped by starAlpha in updateEnv. By day the
-  // Sky mesh covers the background; at deep night the Sky is hidden and these show.
+  // Day/night backdrop, fog, and water colors, lerped by starAlpha in updateEnv. By
+  // day the Sky mesh covers the background; at deep night the Sky is hidden and these
+  // show. Water also darkens at night so it stops reading tropical-teal after dusk.
   const DAY_BG = new THREE.Color(0x8fb6e6), NIGHT_BG = new THREE.Color(0x05070d)
   const DAY_FOG = new THREE.Color(0x9fb6c8), NIGHT_FOG = new THREE.Color(0x0a0e18)
+  const DAY_WATER = new THREE.Color(0x355766), NIGHT_WATER = new THREE.Color(0x0a141c)
 
-  // Fixed starfield on a large dome; opacity driven by env.starAlpha. Deterministic
-  // scatter (golden-ratio sequence) so positions are stable without Math.random.
+  // Fixed starfield, evenly scattered over a full sphere (Fibonacci sphere) so the
+  // visible upper sky reads as a natural starfield — no Math.abs equator pile-up that
+  // bunched stars into an arc on the horizon. Opacity driven by env.starAlpha.
   const starGeo = new THREE.BufferGeometry()
-  const starN = 1200, starPos = new Float32Array(starN * 3)
+  const starN = 2600, R = 50000, starPos = new Float32Array(starN * 3)
   for (let i = 0; i < starN; i++) {
-    const th = i * 2.399963229      // golden angle (rad)
-    const ph = Math.acos(2 * ((i * 0.6180339887) % 1) - 1)
-    const R = 50000
-    starPos[i * 3] = R * Math.sin(ph) * Math.cos(th)
-    starPos[i * 3 + 1] = Math.abs(R * Math.cos(ph))   // upper hemisphere only
-    starPos[i * 3 + 2] = R * Math.sin(ph) * Math.sin(th)
+    const y = 1 - ((i + 0.5) / starN) * 2          // +1 (zenith) → -1 (nadir), even
+    const rad = Math.sqrt(Math.max(0, 1 - y * y))
+    const th = i * 2.399963229                      // golden angle (rad)
+    starPos[i * 3] = R * rad * Math.cos(th)
+    starPos[i * 3 + 1] = R * y                      // below-horizon stars simply aren't seen
+    starPos[i * 3 + 2] = R * rad * Math.sin(th)
   }
   starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3))
   const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({
-    color: 0xfffff5, size: 120, sizeAttenuation: true, transparent: true, opacity: 0, fog: false
+    color: 0xfffff5, size: 70, sizeAttenuation: true, transparent: true, opacity: 0, fog: false
   }))
   scene.add(stars)
 
@@ -66,9 +69,13 @@ export function createWorld(canvas) {
   let W = 0, H = 0
   function setProjection(view) {
     if (projection) projection.dispose()
-    projection = view.fov > 100
-      ? new CylindricalProjection(view, viewEye(view))
-      : new PerspectiveProjection(view, viewEye(view))
+    // TEMP: the cylindrical (cube render-to-target) path renders black in-browser
+    // (runtime issue, still under debugging) — fall back to a plain perspective camera
+    // for ALL views so the wide "max" view at least renders tonight. It distorts at
+    // the edges past ~100° (exactly why CylindricalProjection exists); re-enable the
+    // `view.fov > 100 ? new CylindricalProjection(...)` branch once the black screen
+    // is root-caused from the browser console.
+    projection = new PerspectiveProjection(view, viewEye(view))
     if (W) projection.resize(W, H)
   }
   function resize(w, h) {
@@ -93,6 +100,7 @@ export function createWorld(canvas) {
     const night = env.starAlpha ?? 0
     scene.background.copy(DAY_BG).lerp(NIGHT_BG, night)
     scene.fog.color.copy(DAY_FOG).lerp(NIGHT_FOG, night)
+    water.material.uniforms.waterColor.value.copy(DAY_WATER).lerp(NIGHT_WATER, night)
     stars.material.opacity = night
     sky.visible = night < 0.95                          // hide the daytime sky model at deep night
     const windScale = 0.5 + (env.windKn ?? 6) / 12      // stronger wind → choppier water
@@ -115,9 +123,15 @@ export function createWorld(canvas) {
       const lenM = s.len || 80, hM = lenM * 0.46     // sprite covers ~length × ~0.46·length tall
       sp.position.set(e, hM * 0.5 * (1 - hd.clipFrac), -n)
       sp.scale.set(lenM, hM, 1)
-      if (sp.material.map) sp.material.map.dispose()
-      sp.material.map = shipTexture(s, env.ambient, hd.clipFrac)
-      sp.material.needsUpdate = true
+      // Rebuild the silhouette texture only when its look actually changes (type,
+      // day/night bucket, or hull-down band) — not every frame.
+      const texKey = `${s.type}|${Math.round((env.ambient ?? 1) * 6)}|${Math.round(hd.clipFrac * 12)}`
+      if (sp.userData.texKey !== texKey) {
+        if (sp.material.map) sp.material.map.dispose()
+        sp.material.map = shipTexture(s, env.ambient, hd.clipFrac)
+        sp.material.needsUpdate = true
+        sp.userData.texKey = texKey
+      }
       sp.userData.ship = s; sp.userData.hullDown = hd.state === 'hulldown'
     }
     for (const [id, sp] of sprites) {

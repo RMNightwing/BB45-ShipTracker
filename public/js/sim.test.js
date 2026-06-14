@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { advanceShip, needsRecycle, makeFleet } from './sim.js'
 import { bearingTo, haversineKm, normalizeSigned } from './geometry.js'
-import { VIEWS } from './config.js'
+import { VIEWS, FAR_KM } from './config.js'
 
 const near = (a, b, eps) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b} (±${eps})`)
 
@@ -42,6 +42,6 @@ test('makeFleet places every ship inside the view arc and envelope', () => {
     const d = haversineKm(v.lat, v.lon, s.lat, s.lon)
     const off = Math.abs(normalizeSigned(bearingTo(v.lat, v.lon, s.lat, s.lon) - v.viewBearing))
     assert.ok(off <= v.fov / 2, `ship ${s.name} bearing off-arc: ${off}`)
-    assert.ok(d >= 4 && d <= 55, `ship ${s.name} distance out of envelope: ${d}`)
+    assert.ok(d >= 2 && d <= FAR_KM, `ship ${s.name} distance out of envelope: ${d}`)
   }
 })
