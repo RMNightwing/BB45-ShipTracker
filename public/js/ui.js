@@ -1,4 +1,5 @@
 import { LANDFALL } from './config.js'
+import { activeViewName, setView, onViewChange } from './view.js'
 
 const COMPASS16 = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW']
 export const compass16 = deg => COMPASS16[Math.round(((deg % 360) / 22.5)) % 16]
@@ -62,6 +63,16 @@ export function trackSticky(state, overRef, now, ttlMs) {
   if (overRef != null) return { id: overRef, lastSeen: now, showId: overRef }
   if (state.id != null && now - state.lastSeen < ttlMs) return { id: state.id, lastSeen: state.lastSeen, showId: state.id }
   return { id: null, lastSeen: state.lastSeen, showId: null }
+}
+
+// Wire the main↔max toggle. Button label shows the view you'll switch TO.
+export function initViewToggle() {
+  const btn = document.getElementById('view-toggle')
+  if (!btn) return
+  const sync = () => { btn.textContent = activeViewName() === 'main' ? '🔭 Full sweep' : '🏠 Main' }
+  btn.addEventListener('click', () => setView(activeViewName() === 'main' ? 'max' : 'main'))
+  onViewChange(sync)
+  sync()
 }
 
 export function showTooltip(hit, mx, my) {

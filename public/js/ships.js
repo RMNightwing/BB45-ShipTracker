@@ -1,5 +1,6 @@
-import { PALETTE, DECK, SUPERSTRUCTURE_M, SIZE_CAP_FRAC, MIN_SHIP_PX } from './config.js'
+import { PALETTE, SUPERSTRUCTURE_M, SIZE_CAP_FRAC, MIN_SHIP_PX } from './config.js'
 import { apparentWidthPx, hullDownState, nearness, normalizeSigned } from './geometry.js'
+import { activeView } from './view.js'
 
 // Grow a hit box to at least min×min around its centre, so a ship only a few
 // pixels wide stays easy to hover. The drawn silhouette is unaffected — this
@@ -168,10 +169,11 @@ function shipFacing(s) {
 // Draw one ship and return its screen hit box (or null if culled/gone).
 // env carries the sky ambient so ships stay legible day and night.
 export function drawShip(ctx, s, x, distanceKm, W, H, horizonY, seaBottomY, exaggeration, nearKm, farKm, env) {
-  const hd = hullDownState(distanceKm, DECK.height, SUPERSTRUCTURE_M)
+  const v = activeView()
+  const hd = hullDownState(distanceKm, v.height, SUPERSTRUCTURE_M)
   if (hd.state === 'gone') return null
 
-  const w = Math.max(MIN_SHIP_PX, apparentWidthPx(s.len, distanceKm, DECK.fov, W, SIZE_CAP_FRAC))
+  const w = Math.max(MIN_SHIP_PX, apparentWidthPx(s.len, distanceKm, v.fov, W, SIZE_CAP_FRAC))
   const shdH = w * 0.5                 // approx silhouette height (tallest type ≈ cruise)
   const det = lodDetail(w)
   const P = shipPalette(env?.ambient)

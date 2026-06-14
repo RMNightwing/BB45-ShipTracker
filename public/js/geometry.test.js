@@ -4,6 +4,7 @@ import {
   toRad, toDeg, normalizeSigned, bearingTo, haversineKm, horizonKm,
   shipHorizonKm, projectX, apparentWidthPx, hullDownState, nearness
 } from './geometry.js'
+import { VIEWS, LANDFALL } from './config.js'
 
 const near = (a, b, eps = 0.5) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b} (±${eps})`)
 
@@ -70,4 +71,12 @@ test('nearness is 1 near, 0 far, clamped', () => {
   near(nearness(1, 4, 55), 1, 1e-9) // clamped
   near(nearness(5, 10, 10), 1, 1e-9)   // farKm == nearKm, inside -> 1
   near(nearness(15, 10, 10), 0, 1e-9)  // farKm == nearKm, outside -> 0
+})
+
+test('Venezuela landfall stays in frame in both views', () => {
+  for (const name of ['main', 'max']) {
+    const v = VIEWS[name]
+    const off = Math.abs(normalizeSigned(LANDFALL.bearing - v.viewBearing))
+    assert.ok(off <= v.fov / 2, `${name}: landfall ${off.toFixed(1)}° vs half-fov ${v.fov / 2}°`)
+  }
 })

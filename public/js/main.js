@@ -1,11 +1,12 @@
-import { DECK, USE_SIM, EXAGGERATION, NEAR_KM, FAR_KM } from './config.js'
+import { USE_SIM, EXAGGERATION, NEAR_KM, FAR_KM } from './config.js'
 import { bearingTo, haversineKm, projectX } from './geometry.js'
 import { drawSky, drawSea, drawClouds, drawDeck, drawPalms, drawCompass, drawLandfall, horizonY, drawStars, drawMoon } from './scene.js'
 import { sunPosition, moonPhase, skyState, projectCelestial } from './sky.js'
 import { drawShip, shipAtPoint } from './ships.js'
 import { makeFleet, stepFleet } from './sim.js'
 import { fetchWeather, venezuelaVerdict } from './weather.js'
-import { renderWeather, renderVerdict, initControls, showTooltip, trackSticky, setShipsStatus } from './ui.js'
+import { renderWeather, renderVerdict, initControls, showTooltip, trackSticky, setShipsStatus, initViewToggle } from './ui.js'
+import { activeView } from './view.js'
 import { connectRelay } from './relay-client.js'
 import { applyShipMessage, buildShips, pruneStale } from './store.js'
 
@@ -61,6 +62,7 @@ const controls = initControls(() => {
   renderVerdict(wx, controls.manual ? controls.sightlineKm : null)
   syncLive(controls.live)
 })
+initViewToggle()
 
 if (!USE_SIM) { // config asked to start live
   controls.live = true
@@ -94,10 +96,11 @@ let last = performance.now()
 function frame(t) {
   const dt = Math.min(0.1, (t - last) / 1000); last = t
   ctx.clearRect(0, 0, W, H)
+  const v = activeView()
   const hY0 = horizonY(W, H)
   const now = new Date()
-  const sp = sunPosition(now, DECK.lat, DECK.lon)
-  const sproj = projectCelestial(sp.azimuth, sp.elevation, DECK.viewBearing, DECK.fov, W, H, hY0)
+  const sp = sunPosition(now, v.lat, v.lon)
+  const sproj = projectCelestial(sp.azimuth, sp.elevation, v.viewBearing, v.fov, W, H, hY0)
   const mp = moonPhase(now)
   const marc = moonArc(now, W, hY0)
   const env = {
@@ -135,10 +138,10 @@ function frame(t) {
   hitRects = []
   // Far ships first so nearer ships draw on top.
   const drawable = ships.map(s => {
-      const d = haversineKm(DECK.lat, DECK.lon, s.lat, s.lon)
-      const b = bearingTo(DECK.lat, DECK.lon, s.lat, s.lon)
+      const d = haversineKm(v.lat, v.lon, s.lat, s.lon)
+      const b = bearingTo(v.lat, v.lon, s.lat, s.lon)
       s._bearing = b
-      const x = projectX(b, DECK.viewBearing, DECK.fov, W)
+      const x = projectX(b, v.viewBearing, v.fov, W)
       return { s, d, x }
     })
     .filter(o => o.x != null && o.d <= Math.min(FAR_KM, sightline))

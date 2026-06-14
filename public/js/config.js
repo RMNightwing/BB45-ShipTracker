@@ -1,14 +1,15 @@
-// The deck — source of truth for the whole view. MEASURED from the patio (m6).
-// Derived horizon at height 30.5 m: waterline = 3.57·√30.5 ≈ 19.7 km.
-// Visible-to range: large container (46 m) ≈ 44 km, tanker (30 m) ≈ 39 km,
-// small craft ≈ 33 km — then hull-down culls them.
-export const DECK = {
-  lat: 12.135778,
-  lon: -68.989280,
-  height: 30.5,      // m above sea level (measured, ~100 ft)
-  viewBearing: 223,  // centre of view; measured edges 145° (left) … 301° (right)
-  fov: 156           // 301 − 145
+// The two measured viewpoints — source of truth for the whole view. Edges were
+// taken at night off nearby landmarks and are provisional (fine-tune pending a
+// morning check). Keep these easily editable.
+//   main: narrow, from further back on the deck. horizon 3.57·√32 ≈ 20.2 km.
+//   max:  full sweep, from the deck peak.        horizon 3.57·√30.5 ≈ 19.7 km.
+export const VIEWS = {
+  main: { label: 'Main',       lat: 12.135972, lon: -68.989167, height: 32,
+          viewBearing: 219.5, fov: 71 },   // edges 184° → 255°
+  max:  { label: 'Full sweep', lat: 12.135778, lon: -68.989280, height: 30.5,
+          viewBearing: 223,   fov: 156 }   // edges 145° → 301°
 }
+export const DEFAULT_VIEW = 'main'
 
 // Venezuela landfall (the visibility prize). The visible feature is Cerro Santa
 // Ana on the Paraguaná Peninsula, not the flat coast. Geometric reach ≈ 122.6 km

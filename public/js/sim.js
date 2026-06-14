@@ -1,5 +1,5 @@
 import { toRad, bearingTo, haversineKm, normalizeSigned } from './geometry.js'
-import { DECK, FAR_KM } from './config.js'
+import { VIEWS, FAR_KM } from './config.js'
 
 const KM_PER_DEG = 111.195
 const SPEEDUP = 15 // accelerate drift so motion is visible, but slow enough to hover
@@ -12,14 +12,14 @@ export function advanceShip(s, dtSec, speedup = SPEEDUP) {
   s.lon += (km / (KM_PER_DEG * Math.cos(toRad(s.lat)))) * Math.sin(c)
 }
 
-export function needsRecycle(s, deck = DECK, maxKm = FAR_KM) {
+export function needsRecycle(s, deck = VIEWS.max, maxKm = FAR_KM) {
   const d = haversineKm(deck.lat, deck.lon, s.lat, s.lon)
   const off = Math.abs(normalizeSigned(bearingTo(deck.lat, deck.lon, s.lat, s.lon) - deck.viewBearing))
   return d > maxKm || d < 1 || off > deck.fov / 2
 }
 
 // Respawn a ship somewhere fresh inside the arc, biased to the far side.
-export function recycle(s, deck = DECK) {
+export function recycle(s, deck = VIEWS.max) {
   const sign = Math.random() < 0.5 ? -1 : 1
   const off = sign * (deck.fov / 2) * (0.55 + Math.random() * 0.4)
   const brg = (deck.viewBearing + off + 360) % 360
@@ -33,7 +33,7 @@ export function recycle(s, deck = DECK) {
   s.course = (deck.viewBearing + (sign < 0 ? 90 : -90) + (Math.random() * 40 - 20) + 360) % 360
 }
 
-export function stepFleet(fleet, dtSec, deck = DECK) {
+export function stepFleet(fleet, dtSec, deck = VIEWS.max) {
   for (const s of fleet) {
     advanceShip(s, dtSec)
     if (needsRecycle(s, deck)) recycle(s, deck)
@@ -57,11 +57,11 @@ const SEED = [
 
 export function makeFleet() {
   return SEED.map((v, i) => {
-    const brg = (DECK.viewBearing + v.off + 360) % 360
+    const brg = (VIEWS.max.viewBearing + v.off + 360) % 360
     const b = toRad(brg), dDeg = v.dist / KM_PER_DEG
-    const lat = DECK.lat + dDeg * Math.cos(b)
-    const lon = DECK.lon + dDeg * Math.sin(b) / Math.cos(toRad(DECK.lat))
-    const course = (DECK.viewBearing + (v.off < 0 ? 80 : -80) + 360) % 360
+    const lat = VIEWS.max.lat + dDeg * Math.cos(b)
+    const lon = VIEWS.max.lon + dDeg * Math.sin(b) / Math.cos(toRad(VIEWS.max.lat))
+    const course = (VIEWS.max.viewBearing + (v.off < 0 ? 80 : -80) + 360) % 360
     return { id: i, name: v.name, flag: v.flag, type: v.type, dest: v.dest, len: v.len, kn: v.kn, course, lat, lon }
   })
 }

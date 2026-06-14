@@ -1,4 +1,4 @@
-import { DECK, LANDFALL, SIGHTLINE } from './config.js'
+import { VIEWS, DEFAULT_VIEW, LANDFALL, SIGHTLINE } from './config.js'
 
 // Hygroscopic growth: humidity swells aerosol, raising extinction.
 export function humidityFactor(rh) {
@@ -27,7 +27,7 @@ export function venezuelaVerdict(slKm, distanceKm = LANDFALL.distanceKm) {
 const FORECAST = 'https://api.open-meteo.com/v1/forecast'
 const AIR = 'https://air-quality-api.open-meteo.com/v1/air-quality'
 
-export async function fetchWeather(lat = DECK.lat, lon = DECK.lon) {
+export async function fetchWeather(lat = VIEWS[DEFAULT_VIEW].lat, lon = VIEWS[DEFAULT_VIEW].lon) {
   const f = new URL(FORECAST)
   f.search = new URLSearchParams({
     latitude: lat, longitude: lon, timezone: 'America/Curacao',

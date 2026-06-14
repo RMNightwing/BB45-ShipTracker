@@ -1,5 +1,6 @@
-import { DECK, LANDFALL } from './config.js'
+import { LANDFALL } from './config.js'
 import { normalizeSigned, projectX } from './geometry.js'
+import { activeView } from './view.js'
 
 const rgba = (c, a) => `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${a})`
 
@@ -62,6 +63,7 @@ export function drawSea(ctx, W, H, t, env) {
 const mod = (a, n) => ((a % n) + n) % n
 
 export function drawClouds(ctx, W, H, t, env) {
+  const v = activeView()
   const y = horizonY(W, H)
   const pct = Math.max(0, Math.min(100, env.cloudPct ?? 40))
   const n = Math.round(2 + (pct / 100) * 6)                 // 2..8 clouds
@@ -69,7 +71,7 @@ export function drawClouds(ctx, W, H, t, env) {
   const amb = env.ambient ?? 1
   const tint = [40 + 215 * amb, 45 + 210 * amb, 70 + 185 * amb] // dark at night, white by day
   // Drift from the crosswind component relative to the view bearing.
-  const rel = (env.wind.dir - DECK.viewBearing) * Math.PI / 180
+  const rel = (env.wind.dir - v.viewBearing) * Math.PI / 180
   const drift = Math.sin(rel) * (env.wind.kn || 5)
   ctx.save()
   for (let i = 0; i < n; i++) {
@@ -217,6 +219,7 @@ function frond(ctx, cx, cy, ang, len, width) {
 
 // Thin bearing strip just above the stone band: degree + cardinal ticks.
 export function drawCompass(ctx, W, H) {
+  const v = activeView()
   const stoneH = Math.max(26, H * 0.05)
   const y = H - stoneH - 16
   const CARD = { 0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SW', 270: 'W', 315: 'NW' }
@@ -225,9 +228,9 @@ export function drawCompass(ctx, W, H) {
   ctx.font = '10px system-ui, sans-serif'
   ctx.textAlign = 'center'
   for (let deg = 0; deg < 360; deg += 5) {
-    const d = normalizeSigned(deg - DECK.viewBearing)
-    if (Math.abs(d) > DECK.fov / 2) continue
-    const x = W * (0.5 + d / DECK.fov)
+    const d = normalizeSigned(deg - v.viewBearing)
+    if (Math.abs(d) > v.fov / 2) continue
+    const x = W * (0.5 + d / v.fov)
     const major = deg % 15 === 0
     ctx.globalAlpha = major ? 0.8 : 0.4
     ctx.fillRect(x, y, 1, major ? 7 : 4)
@@ -241,7 +244,8 @@ export function drawCompass(ctx, W, H) {
 // Drawn at the landfall bearing, sitting on the horizon, behind ships.
 export function drawLandfall(ctx, W, H, opacity) {
   if (!opacity || opacity <= 0.01) return
-  const cx = projectX(LANDFALL.bearing, DECK.viewBearing, DECK.fov, W)
+  const v = activeView()
+  const cx = projectX(LANDFALL.bearing, v.viewBearing, v.fov, W)
   if (cx == null) return
   const y = horizonY(W, H)
   const span = W * 0.42        // how wide the coast reads across the view
