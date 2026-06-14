@@ -1,6 +1,7 @@
 import { USE_SIM, EXAGGERATION, NEAR_KM, FAR_KM, VIEWS, DEFAULT_VIEW } from './config.js'
 import { bearingTo, haversineKm, projectX, enu } from './geometry.js'
-import { drawSky, drawSea, drawClouds, drawDeck, drawPalms, drawCompass, drawLandfall, horizonY, drawStars, drawMoon } from './scene.js'
+import { drawSky, drawSea, drawClouds, drawLandfall, horizonY, drawStars, drawMoon } from './scene.js'
+import { drawOverlay } from './overlay.js'
 import { sunPosition, moonPhase, skyState, projectCelestial } from './sky.js'
 import { drawShip, shipAtPoint, padRect } from './ships.js'
 import { makeFleet, stepFleet } from './sim.js'
@@ -127,7 +128,6 @@ function frame(t) {
   // if (effSl != null) drawLandfall(ctx, W, H, venezuelaVerdict(effSl).opacity)
   world.updateEnv({ sunAz: sp.azimuth, sunEl: sp.elevation, sightlineKm: effSl })
   world.render(t)
-  drawCompass(ctx, W, H)
 
   if (controls.live) {
     pruneStale(store, performance.now(), SHIP_TTL)
@@ -155,9 +155,6 @@ function frame(t) {
   )
   hitRects = world.shipScreenRects().map(r => ({ ...r, ...padRect(r.x - 14, r.y - 14, 28, 28, 28) }))
 
-  drawDeck(ctx, W, H)
-  drawPalms(ctx, W, H, t)
-
   // Sticky hover: details follow the held ship after the cursor leaves, until
   // it's been gone STICKY_MS or another ship is hovered.
   const over = mouse.x >= 0 ? shipAtPoint(hitRects, mouse.x, mouse.y) : null
@@ -166,6 +163,7 @@ function frame(t) {
   const shown = sticky.showId != null ? hitRects.find(r => r.ref === sticky.showId) : null
   if (shown) showTooltip(shown, over ? mouse.x : shown.x + shown.w, over ? mouse.y : shown.y)
   else showTooltip(null)
+  drawOverlay(ctx, W, H, t)
 
   requestAnimationFrame(frame)
 }
