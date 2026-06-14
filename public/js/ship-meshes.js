@@ -113,3 +113,30 @@ export function shipMaterials(group) {
   group.traverse(o => { if (o.material) out.push(o.material) })
   return out
 }
+
+// A translucent foam wake laid flat on the water behind the ship, extending astern
+// (+Z), length/alpha scaled by knots. Added as a child of the ship group so it
+// inherits the heading + fan-out scale and stays grounded (local y≈0). Its own
+// material (no clip plane) so it isn't hull-down-clipped.
+export function makeWake(lenM, knots) {
+  const wakeLen = lenM * (1 + (knots || 0) * 0.5)
+  const geo = new THREE.PlaneGeometry(lenM * 0.5, wakeLen)
+  geo.rotateX(-Math.PI / 2)                          // lie flat on the XZ water plane
+  geo.translate(0, 0.4, wakeLen / 2 + lenM * 0.45)   // start just astern of the stern
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+    map: wakeTexture(), color: 0xffffff, transparent: true,
+    opacity: Math.min(0.5, 0.12 + (knots || 0) * 0.03), fog: true, depthWrite: false
+  }))
+  return m
+}
+
+function wakeTexture() {
+  const c = document.createElement('canvas'); c.width = 16; c.height = 64
+  const ctx = c.getContext('2d')
+  const g = ctx.createLinearGradient(0, 64, 0, 0)    // bright at the stern → fade aft
+  g.addColorStop(0, 'rgba(255,255,255,0.9)')
+  g.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 16, 64)
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace
+  return t
+}
