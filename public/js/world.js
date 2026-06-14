@@ -1,6 +1,6 @@
 import * as THREE from 'three'
-import { Water } from './vendor/three/Water.js'
-import { Sky } from './vendor/three/Sky.js'
+import { Water } from '../vendor/three/Water.js'
+import { Sky } from '../vendor/three/Sky.js'
 import { enu, toRad, hullDownState } from './geometry.js'
 import { VIEWS, DEFAULT_VIEW, SUPERSTRUCTURE_M } from './config.js'
 import { makeShipSprite, shipTexture } from './ship-sprites.js'
