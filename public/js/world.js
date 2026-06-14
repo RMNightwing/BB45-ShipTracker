@@ -1,9 +1,9 @@
 import * as THREE from 'three'
 import { Water } from '../vendor/three/Water.js'
 import { Sky } from '../vendor/three/Sky.js'
-import { enu, toRad, hullDownState } from './geometry.js'
-import { VIEWS, DEFAULT_VIEW, SUPERSTRUCTURE_M } from './config.js'
-import { makeShipSprite, shipTexture } from './ship-sprites.js'
+import { enu, toRad, hullDownState, fannedPlacement } from './geometry.js'
+import { VIEWS, DEFAULT_VIEW, SUPERSTRUCTURE_M, EXAGGERATION, NEAR_KM, FAR_KM } from './config.js'
+import { makeShipMesh, makeWake, shipMaterials } from './ship-meshes.js'
 import { PerspectiveProjection, CylindricalProjection } from './projections.js'
 import { fogDensity } from './projection-math.js'
 
@@ -14,6 +14,7 @@ export function viewEye(view) { return enu(view.lat, view.lon, ORIGIN.lat, ORIGI
 
 export function createWorld(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
+  renderer.localClippingEnabled = true   // per-ship hull-down clip planes
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
   const scene = new THREE.Scene()
   scene.background = new THREE.Color(0x8fb6e6)
@@ -108,47 +109,64 @@ export function createWorld(canvas) {
   }
 
   const shipLayer = new THREE.Group(); scene.add(shipLayer)
-  const sprites = new Map()
-  // Caller must set s._distanceKm and s._enu on each ship before calling.
-  // Texture rebuilt per frame — fine for the ~9-ship fleet; cache later if needed.
+  const meshes = new Map()
+  // Caller sets s._distanceKm and s._enu (ENU vs DEFAULT_VIEW origin) on each ship.
   function updateShips(ships, env) {
+    const eye = projection ? projection.eyeGround() : { e: 0, n: 0 }
     const seen = new Set()
     for (const s of ships) {
       const hd = hullDownState(s._distanceKm, env.deckHeight, SUPERSTRUCTURE_M)
       if (hd.state === 'gone') continue
       seen.add(s.id)
-      let sp = sprites.get(s.id)
-      if (!sp) { sp = makeShipSprite(); shipLayer.add(sp); sprites.set(s.id, sp) }
-      const { e, n } = s._enu
-      const lenM = s.len || 80, hM = lenM * 0.46     // sprite covers ~length × ~0.46·length tall
-      sp.position.set(e, hM * 0.5 * (1 - hd.clipFrac), -n)
-      sp.scale.set(lenM, hM, 1)
-      // Rebuild the silhouette texture only when its look actually changes (type,
-      // day/night bucket, or hull-down band) — not every frame.
-      const texKey = `${s.type}|${Math.round((env.ambient ?? 1) * 6)}|${Math.round(hd.clipFrac * 12)}`
-      if (sp.userData.texKey !== texKey) {
-        if (sp.material.map) sp.material.map.dispose()
-        sp.material.map = shipTexture(s, env.ambient, hd.clipFrac)
-        sp.material.needsUpdate = true
-        sp.userData.texKey = texKey
+      let sp = meshes.get(s.id)
+      const len = s.len || 80
+      if (!sp || sp.userData.type !== s.type || sp.userData.len !== len) {
+        if (sp) { shipLayer.remove(sp); disposeShip(sp) }
+        sp = makeShipMesh(s)
+        sp.userData.type = s.type; sp.userData.len = len
+        sp.userData.clip = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
+        sp.userData.materials = shipMaterials(sp)
+        for (const m of sp.userData.materials) m.clippingPlanes = [sp.userData.clip]
+        sp.add(makeWake(len, s.kn))
+        shipLayer.add(sp); meshes.set(s.id, sp)
+      }
+      // Fan-out: pull near ships closer along the sight-ray (lower in frame), scaled
+      // down so bearing + apparent size stay exact. Hull-down uses the TRUE distance.
+      const p = fannedPlacement(eye, { e: s._enu.e, n: s._enu.n }, s._distanceKm, EXAGGERATION, NEAR_KM, FAR_KM)
+      sp.position.set(p.e, 0, -p.n)
+      sp.rotation.y = -toRad(s.course ?? s.cog ?? 0)
+      sp.scale.setScalar(p.scale)
+      // Hull-down: raise the world-space clip plane so the lower hull is cut as the
+      // ship recedes (keep y ≥ clipFrac × world height).
+      const worldH = sp.userData.heightM * p.scale
+      sp.userData.clip.constant = -(hd.clipFrac * worldH)
+      // Night legibility: lift an emissive floor as ambient falls.
+      const emis = Math.max(0, 0.5 - (env.ambient ?? 1) * 0.5)
+      for (const m of sp.userData.materials) {
+        if (m.emissive) { m.emissive.setHex(0x223038); m.emissiveIntensity = emis }
       }
       sp.userData.ship = s; sp.userData.hullDown = hd.state === 'hulldown'
     }
-    for (const [id, sp] of sprites) {
+    for (const [id, sp] of meshes) {
       if (seen.has(id)) continue
-      shipLayer.remove(sp)
-      if (sp.material.map) sp.material.map.dispose()
-      sp.material.dispose()
-      sprites.delete(id)
+      shipLayer.remove(sp); disposeShip(sp); meshes.delete(id)
     }
   }
-  // Screen rects for overlay hover/tooltip, via the active projection.
+  function disposeShip(sp) {
+    sp.traverse(o => {
+      if (o.geometry) o.geometry.dispose()
+      if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose() }
+    })
+  }
+  // Screen rects for overlay hover/tooltip, anchored at the ship's mid-height.
   function shipScreenRects() {
     const out = []
     const proj = projection
     if (!proj) return out
-    for (const sp of sprites.values()) {
-      const p = proj.project(sp.position)
+    for (const sp of meshes.values()) {
+      const c = sp.position.clone()
+      c.y += sp.userData.heightM * sp.scale.x * 0.5
+      const p = proj.project(c)
       if (p.visible) out.push({ ref: sp.userData.ship.id, ship: sp.userData.ship, distanceKm: sp.userData.ship._distanceKm, hullDown: sp.userData.hullDown, x: p.x, y: p.y })
     }
     return out
