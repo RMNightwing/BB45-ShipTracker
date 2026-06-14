@@ -35,7 +35,7 @@ export function renderVerdict(wx, manualSlKm) {
 }
 
 // Wire the slider + toggles. Returns a small state object the loop reads.
-export function initControls(onChange) {
+export function initControls(onChange, calDefaults = {}) {
   const state = { sightlineKm: 40, drift: true, liveWx: true, manual: false, live: false }
   const sl = document.getElementById('sl'), slVal = document.getElementById('sl-val')
   const drift = document.getElementById('drift'), wxBtn = document.getElementById('livewx')
@@ -46,6 +46,20 @@ export function initControls(onChange) {
   drift.addEventListener('click', () => { state.drift = !state.drift; drift.textContent = state.drift ? '⏸ Drift' : '▶ Drift'; onChange(state) })
   wxBtn.addEventListener('click', () => { state.liveWx = !state.liveWx; wxBtn.textContent = state.liveWx ? '◉ Live wx' : '○ Live wx'; onChange(state) })
   liveBtn.addEventListener('click', () => { state.live = !state.live; liveBtn.textContent = state.live ? '📡 Live ships' : '📡 Go live'; onChange(state) })
+  // Calibration sliders (perceptual ship model). They only mutate state; the render
+  // loop reads it next frame, so no onChange needed. Defaults come from config.js.
+  const cal = [
+    ['gain', 'sizeGain', v => v.toFixed(4)],
+    ['spread', 'depthSpread', v => v.toFixed(2)],
+    ['haze', 'hazeStrength', v => v.toFixed(2)]
+  ]
+  for (const [id, key, fmt] of cal) {
+    const el = document.getElementById(id), lbl = document.getElementById(id + '-val')
+    if (calDefaults[key] != null) el.value = calDefaults[key]
+    state[key] = +el.value
+    lbl.textContent = fmt(state[key])
+    el.addEventListener('input', () => { state[key] = +el.value; lbl.textContent = fmt(state[key]) })
+  }
   return state
 }
 
