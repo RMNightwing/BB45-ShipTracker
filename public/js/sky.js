@@ -2,6 +2,8 @@
 // every function takes its inputs explicitly so it unit-tests under Node.
 // Solar/lunar math adapted from the well-known SunCalc formulas.
 
+import { SKY } from './config.js'
+
 const rad = Math.PI / 180
 const dayMs = 86400000, J1970 = 2440588, J2000 = 2451545
 const e = rad * 23.4397 // obliquity of the ecliptic
@@ -40,4 +42,30 @@ export function moonPhase(date) {
   const phase = (((days % SYNODIC) + SYNODIC) % SYNODIC) / SYNODIC // 0=new .. 0.5=full
   const fraction = (1 - Math.cos(2 * Math.PI * phase)) / 2
   return { phase, fraction, waxing: phase < 0.5 }
+}
+
+const lerp = (a, b, u) => a + (b - a) * u
+const css = c => `rgb(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])})`
+const CSS_CH = ['skyTop', 'skyBottom', 'seaTop', 'seaBottom', 'horizon']
+
+// Interpolated sky environment for a given sun elevation (deg). Colour channels
+// come back as css 'rgb(...)' strings; sunTint stays an [r,g,b] array so callers
+// can build rgba glows. ambient/starAlpha are 0..1.
+export function skyState(elevationDeg) {
+  let hi = SKY[0], lo = SKY[SKY.length - 1]
+  if (elevationDeg >= hi.el) lo = hi
+  else if (elevationDeg <= lo.el) hi = lo
+  else {
+    for (let i = 0; i < SKY.length - 1; i++) {
+      if (elevationDeg <= SKY[i].el && elevationDeg >= SKY[i + 1].el) { hi = SKY[i]; lo = SKY[i + 1]; break }
+    }
+  }
+  const span = hi.el - lo.el
+  const u = span === 0 ? 0 : (hi.el - elevationDeg) / span // 0 at hi, 1 at lo
+  const out = {}
+  for (const ch of CSS_CH) out[ch] = css(hi[ch].map((v, j) => lerp(v, lo[ch][j], u)))
+  out.sunTint = hi.sunTint.map((v, j) => lerp(v, lo.sunTint[j], u))
+  out.ambient = lerp(hi.ambient, lo.ambient, u)
+  out.starAlpha = lerp(hi.starAlpha, lo.starAlpha, u)
+  return out
 }

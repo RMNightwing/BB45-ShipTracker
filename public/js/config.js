@@ -46,6 +46,17 @@ export const SIGHTLINE = {
   bandKm: 15           // half-width of the "barely visible" band around 70 km
 }
 
+// Sky palette keyframes by sun elevation (deg), high → low. Colours are [r,g,b];
+// ambient 0..1 dims the sea/clouds; starAlpha 0..1 fades the night sky in.
+// skyState() in sky.js interpolates between adjacent rows. Tunable by eye.
+export const SKY = [
+  { el:  12, skyTop:[127,182,230], skyBottom:[220,234,243], seaTop:[188,214,223], seaBottom:[63,125,146], horizon:[44,91,107], sunTint:[255,248,228], ambient:1.00, starAlpha:0    },
+  { el:   2, skyTop:[120,150,200], skyBottom:[255,222,180], seaTop:[150,170,180], seaBottom:[50,95,120],  horizon:[60,80,100], sunTint:[255,226,180], ambient:0.85, starAlpha:0    },
+  { el:  -4, skyTop:[40,50,95],    skyBottom:[235,140,90],  seaTop:[60,70,95],    seaBottom:[28,45,70],   horizon:[45,55,80],  sunTint:[255,170,110], ambient:0.45, starAlpha:0.45 },
+  { el: -10, skyTop:[18,22,48],    skyBottom:[40,45,80],    seaTop:[20,28,45],    seaBottom:[10,16,30],   horizon:[22,28,48],  sunTint:[120,130,170], ambient:0.18, starAlpha:0.90 },
+  { el: -18, skyTop:[8,10,24],     skyBottom:[14,18,38],    seaTop:[8,12,22],     seaBottom:[4,7,16],     horizon:[12,16,30],  sunTint:[80,90,130],   ambient:0.10, starAlpha:1    }
+]
+
 // Palette.
 export const PALETTE = {
   skyTop: '#7fb6e6', skyBottom: '#dceaf3',

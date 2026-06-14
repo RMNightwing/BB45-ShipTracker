@@ -42,3 +42,28 @@ test('moonPhase: a week after full is waning', () => {
   const m = moonPhase(new Date('2000-01-28T00:00:00Z'))
   assert.equal(m.waxing, false)
 })
+
+import { skyState } from './sky.js'
+
+test('skyState: full day has no stars and full ambient, returns css colours', () => {
+  const s = skyState(60)
+  assert.equal(s.starAlpha, 0)
+  assert.ok(s.ambient > 0.95)
+  assert.match(s.skyTop, /^rgb\(/)
+  assert.ok(Array.isArray(s.sunTint)) // sunTint stays [r,g,b] for alpha compositing
+})
+
+test('skyState: deep night is fully starred and dim', () => {
+  const s = skyState(-30)
+  assert.equal(s.starAlpha, 1)
+  assert.ok(s.ambient < 0.15)
+})
+
+test('skyState: stars grow as the sun sinks', () => {
+  assert.ok(skyState(-12).starAlpha > skyState(0).starAlpha)
+})
+
+test('skyState: interpolates between keyframes', () => {
+  const s = skyState(7) // between the +12 and +2 rows
+  assert.ok(s.ambient > 0.85 && s.ambient < 1)
+})
