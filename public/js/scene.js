@@ -34,28 +34,28 @@ export function drawSky(ctx, W, H, t, env) {
   }
 }
 
-export function drawSea(ctx, W, H, t) {
+export function drawSea(ctx, W, H, t, env) {
   const y = horizonY(W, H)
   const g = ctx.createLinearGradient(0, y, 0, H)
-  g.addColorStop(0, PALETTE.seaTop); g.addColorStop(1, PALETTE.seaBottom)
-  // Clip the sea to the curved horizon so the dip reads.
+  g.addColorStop(0, env.seaTop); g.addColorStop(1, env.seaBottom)
   ctx.save()
   horizonPath(ctx, W, H); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.clip()
   ctx.fillStyle = g; ctx.fillRect(0, y - curveDip(W), W, H)
 
-  // Sun-glitter streak descending from the sun toward the viewer.
-  const cx = W * 0.5
-  for (let i = 0; i < 60; i++) {
-    const fy = y + (H - y) * (i / 60)
-    const spread = 6 + (i / 60) * W * 0.10
-    const a = 0.10 * (1 - i / 60) * (0.6 + 0.4 * Math.sin(t / 400 + i))
-    ctx.fillStyle = `rgba(255,250,235,${a.toFixed(3)})`
-    ctx.fillRect(cx - spread, fy, spread * 2, 2)
+  // Sun-glitter only while the sun is up and in view, descending from its real x.
+  if (env.sun.visible && env.sun.up) {
+    const cx = env.sun.x
+    for (let i = 0; i < 60; i++) {
+      const fy = y + (H - y) * (i / 60)
+      const spread = 6 + (i / 60) * W * 0.10
+      const a = 0.12 * env.ambient * (1 - i / 60) * (0.6 + 0.4 * Math.sin(t / 400 + i))
+      ctx.fillStyle = `rgba(255,250,235,${a.toFixed(3)})`
+      ctx.fillRect(cx - spread, fy, spread * 2, 2)
+    }
   }
   ctx.restore()
 
-  // Thin horizon line.
-  ctx.strokeStyle = PALETTE.horizon; ctx.lineWidth = 1; ctx.globalAlpha = 0.5
+  ctx.strokeStyle = env.horizon; ctx.lineWidth = 1; ctx.globalAlpha = 0.5
   horizonPath(ctx, W, H); ctx.stroke(); ctx.globalAlpha = 1
 }
 
