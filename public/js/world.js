@@ -139,6 +139,8 @@ export function createWorld(canvas) {
           if (m.emissive) m.emissive.setHex(0x223038)  // fixed moonlit tint; only intensity varies
           m.needsUpdate = true
         }
+        // Wake is added AFTER shipMaterials() above, so it keeps scene fog (and no
+        // perceptual haze/baseColor) — a foam trail fading on the optical curve.
         sp.add(makeWake(len, s.kn))
         shipLayer.add(sp); meshes.set(s.id, sp)
       }
