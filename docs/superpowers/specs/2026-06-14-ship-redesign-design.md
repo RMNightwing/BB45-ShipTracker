@@ -1,7 +1,14 @@
 # Ship redesign — distinct procedural silhouettes, honest distance spread, day/night legibility
 
 Date: 2026-06-14
-Status: design approved (via `public/mockups/ships.html`), ready to plan
+Status: SUPERSEDED by `2026-06-14-ship-3d-meshes-design.md`. This spec targeted the
+pre-migration 2D `drawShip`/canvas-silhouette renderer. The Three.js migration replaced that
+renderer with billboard sprites, and the 3D-meshes spec replaces the billboards with real 3D
+geometry — carrying forward this spec's per-type signatures, `EXAGGERATION` spread idea, and
+distance-fade, but dropping its 2D-specific contrast-floor/rim/LOD mechanics (lighting +
+perspective handle those now). Kept for history.
+
+(original) Status: design approved (via `public/mockups/ships.html`), ready to plan
 
 ## Why
 
