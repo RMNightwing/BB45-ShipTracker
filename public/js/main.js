@@ -144,7 +144,7 @@ function frame(t) {
     .filter(o => o.x != null && o.d <= Math.min(FAR_KM, sightline))
     .sort((a, b) => b.d - a.d)
   for (const o of drawable) {
-    const rect = drawShip(ctx, o.s, o.x, o.d, W, H, hY, seaBottom, EXAGGERATION, NEAR_KM, FAR_KM)
+    const rect = drawShip(ctx, o.s, o.x, o.d, W, H, hY, seaBottom, EXAGGERATION, NEAR_KM, FAR_KM, env)
     if (rect) hitRects.push(rect)
   }
 

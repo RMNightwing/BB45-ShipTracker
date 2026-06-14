@@ -21,11 +21,18 @@ export const USE_SIM = true
 
 // Vertical-spread stylisation. 0 = physically literal (flat row on horizon),
 // 1 = dramatic. Bearing and apparent size are NEVER affected by this.
-export const EXAGGERATION = 0.3
+export const EXAGGERATION = 0.5
 
-// Render/recycle envelope (km).
+// Render/recycle envelope (km). FAR_KM tracks the real visible edge: a 30 m
+// superstructure from a 30.5 m deck goes hull-down by ≈39 km, so ships at the
+// far bound sit on the horizon (nearness→0) and fade out there rather than
+// floating below it.
 export const NEAR_KM = 4
-export const FAR_KM = 55
+export const FAR_KM = 40
+
+// Minimum drawn ship width (px), so the farthest vessel is a faint smudge on the
+// horizon rather than a sub-pixel that vanishes before the honest hull-down cull.
+export const MIN_SHIP_PX = 8
 
 // Assumed average ship superstructure height (m) for the hull-down horizon.
 export const SUPERSTRUCTURE_M = 30
