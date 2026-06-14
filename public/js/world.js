@@ -1,8 +1,9 @@
 import * as THREE from 'three'
 import { Water } from './vendor/three/Water.js'
 import { Sky } from './vendor/three/Sky.js'
-import { enu, toRad } from './geometry.js'
-import { VIEWS, DEFAULT_VIEW } from './config.js'
+import { enu, toRad, hullDownState } from './geometry.js'
+import { VIEWS, DEFAULT_VIEW, SUPERSTRUCTURE_M } from './config.js'
+import { makeShipSprite, shipTexture } from './ship-sprites.js'
 import { PerspectiveProjection } from './projections.js'
 import { fogDensity } from './projection-math.js'
 
@@ -65,5 +66,41 @@ export function createWorld(canvas) {
     if (env.sightlineKm != null) scene.fog.density = fogDensity(env.sightlineKm)
   }
 
-  return { renderer, scene, water, setProjection, getProjection: () => projection, updateEnv, resize, render }
+  const shipLayer = new THREE.Group(); scene.add(shipLayer)
+  const sprites = new Map()
+  // Texture rebuilt per frame — fine for the ~9-ship fleet; cache later if needed.
+  function updateShips(ships, env) {
+    const seen = new Set()
+    for (const s of ships) {
+      const hd = hullDownState(s._distanceKm, env.deckHeight, SUPERSTRUCTURE_M)
+      if (hd.state === 'gone') continue
+      seen.add(s.id)
+      let sp = sprites.get(s.id)
+      if (!sp) { sp = makeShipSprite(); shipLayer.add(sp); sprites.set(s.id, sp) }
+      const { e, n } = s._enu
+      const lenM = s.len || 80, hM = lenM * 0.46     // sprite covers ~length × ~0.46·length tall
+      sp.position.set(e, hM * 0.5 * (1 - hd.clipFrac), -n)
+      sp.scale.set(lenM, hM, 1)
+      if (sp.material.map) sp.material.map.dispose()
+      sp.material.map = shipTexture(s, env.ambient, hd.clipFrac)
+      sp.material.needsUpdate = true
+      sp.userData.ship = s; sp.userData.hullDown = hd.state === 'hulldown'
+    }
+    for (const [id, sp] of sprites) if (!seen.has(id)) {
+      shipLayer.remove(sp); if (sp.material.map) sp.material.map.dispose(); sp.material.dispose(); sprites.delete(id)
+    }
+  }
+  // Screen rects for overlay hover/tooltip, via the active projection.
+  function shipScreenRects() {
+    const out = []
+    const proj = projection
+    if (!proj) return out
+    for (const sp of sprites.values()) {
+      const p = proj.project(sp.position)
+      if (p.visible) out.push({ ref: sp.userData.ship.id, ship: sp.userData.ship, distanceKm: sp.userData.ship._distanceKm, hullDown: sp.userData.hullDown, x: p.x, y: p.y })
+    }
+    return out
+  }
+
+  return { renderer, scene, water, setProjection, getProjection: () => projection, updateEnv, resize, render, updateShips, shipScreenRects }
 }

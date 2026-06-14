@@ -1,8 +1,8 @@
-import { USE_SIM, EXAGGERATION, NEAR_KM, FAR_KM } from './config.js'
-import { bearingTo, haversineKm, projectX } from './geometry.js'
+import { USE_SIM, EXAGGERATION, NEAR_KM, FAR_KM, VIEWS } from './config.js'
+import { bearingTo, haversineKm, projectX, enu } from './geometry.js'
 import { drawSky, drawSea, drawClouds, drawDeck, drawPalms, drawCompass, drawLandfall, horizonY, drawStars, drawMoon } from './scene.js'
 import { sunPosition, moonPhase, skyState, projectCelestial } from './sky.js'
-import { drawShip, shipAtPoint } from './ships.js'
+import { drawShip, shipAtPoint, padRect } from './ships.js'
 import { makeFleet, stepFleet } from './sim.js'
 import { fetchWeather, venezuelaVerdict } from './weather.js'
 import { renderWeather, renderVerdict, initControls, showTooltip, trackSticky, setShipsStatus, initViewToggle } from './ui.js'
@@ -142,23 +142,19 @@ function frame(t) {
   }
 
   const hY = horizonY(W, H)
-  const seaBottom = H - Math.max(26, H * 0.05) - 18
   const sightline = controls.sightlineKm
-  hitRects = []
-  // Far ships first so nearer ships draw on top.
-  const drawable = ships.map(s => {
-      const d = haversineKm(v.lat, v.lon, s.lat, s.lon)
-      const b = bearingTo(v.lat, v.lon, s.lat, s.lon)
-      s._bearing = b
-      const x = projectX(b, v.viewBearing, v.fov, W)
-      return { s, d, x }
-    })
-    .filter(o => o.x != null && o.d <= Math.min(FAR_KM, sightline))
-    .sort((a, b) => b.d - a.d)
-  for (const o of drawable) {
-    const rect = drawShip(ctx, o.s, o.x, o.d, W, H, hY, seaBottom, EXAGGERATION, NEAR_KM, FAR_KM, env)
-    if (rect) hitRects.push(rect)
+  // Place ships in the 3D world at their true ENU positions; the projection + fog
+  // give size, depth, and haze. Hover rects come back projected to screen.
+  for (const s of ships) {
+    s._distanceKm = haversineKm(v.lat, v.lon, s.lat, s.lon)
+    s._bearing = bearingTo(v.lat, v.lon, s.lat, s.lon)
+    s._enu = enu(s.lat, s.lon, VIEWS.main.lat, VIEWS.main.lon)
   }
+  world.updateShips(
+    ships.filter(s => s._distanceKm <= Math.min(FAR_KM, sightline)),
+    { ambient: env.ambient, deckHeight: v.height }
+  )
+  hitRects = world.shipScreenRects().map(r => ({ ...r, ...padRect(r.x - 14, r.y - 14, 28, 28, 28) }))
 
   drawDeck(ctx, W, H)
   drawPalms(ctx, W, H, t)

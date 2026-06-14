@@ -48,7 +48,7 @@ const SHIP = {
   boxes: ['#7c4a3a', '#3f6e72', '#9c8350', '#56707c', '#6b4a52', '#3f5a6e']
 }
 const MOON_MID = '#6f8893'
-function shipPalette(ambient) {
+export function shipPalette(ambient) {
   const lift = nightLift(ambient)
   const m = c => mix(c, MOON_MID, lift * 0.6)
   const rim = lift > 0.4
@@ -63,7 +63,7 @@ function rim(ctx, P) { ctx.save(); ctx.strokeStyle = P.rim; ctx.lineWidth = 1; c
 
 // Per-type painters draw a unit ship into a box: x 0..w, waterline at y=0, UP is
 // negative. det 0..1 detail; P resolved palette. Differ by proportion + signature.
-const SILHOUETTES = {
+export const SILHOUETTES = {
   container(ctx, w, det, P) {
     const hf = Math.max(2, w * 0.085)
     ctx.beginPath(); ctx.moveTo(0, -hf); ctx.lineTo(w * 0.97, -hf)
