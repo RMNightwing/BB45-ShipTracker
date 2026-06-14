@@ -21,6 +21,8 @@ export class PerspectiveProjection {
     this._w = w; this._h = h
   }
   render(renderer, scene) { renderer.render(scene, this.camera) }
+  // Ground point {e,n} of the eye in the world ENU frame (x=e, z=-n).
+  eyeGround() { return { e: this.camera.position.x, n: -this.camera.position.z } }
   dispose() {}
   // World position (THREE.Vector3) → screen px (CSS pixels). visible=false off-screen/behind.
   project(worldPos) {
@@ -73,6 +75,7 @@ export class CylindricalProjection {
     this.cubeCam.update(renderer, scene)
     renderer.render(this.quadScene, this.quadCam)
   }
+  eyeGround() { return { e: this.eye.x, n: -this.eye.z } }
   dispose() {
     this.cubeCam.renderTarget.dispose()
     this.mat.dispose()
