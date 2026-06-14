@@ -1,4 +1,4 @@
-import { USE_SIM, FAR_KM, VIEWS, DEFAULT_VIEW } from './config.js'
+import { USE_SIM, FAR_KM, VIEWS, DEFAULT_VIEW, SIZE_GAIN, DEPTH_SPREAD, HAZE_STRENGTH } from './config.js'
 import { bearingTo, haversineKm, enu } from './geometry.js'
 import { drawOverlay } from './overlay.js'
 import { sunPosition, skyState } from './sky.js'
@@ -57,7 +57,7 @@ function syncLive(on) {
 const controls = initControls(() => {
   renderVerdict(wx, controls.manual ? controls.sightlineKm : null)
   syncLive(controls.live)
-})
+}, { sizeGain: SIZE_GAIN, depthSpread: DEPTH_SPREAD, hazeStrength: HAZE_STRENGTH })
 initViewToggle()
 
 if (!USE_SIM) { // config asked to start live
@@ -123,7 +123,8 @@ function frame(t) {
   }
   world.updateShips(
     ships.filter(s => s._distanceKm <= Math.min(FAR_KM, sightline)),
-    { ambient: env.ambient, deckHeight: v.height }
+    { ambient: env.ambient, deckHeight: v.height,
+      sizeGain: controls.sizeGain, depthSpread: controls.depthSpread, hazeStrength: controls.hazeStrength }
   )
   world.render(t)
   hitRects = world.shipScreenRects().map(r => ({ ...r, ...padRect(r.x - 14, r.y - 14, 28, 28, 28) }))
