@@ -1,4 +1,4 @@
-import { PALETTE, DECK, LANDFALL } from './config.js'
+import { DECK, LANDFALL } from './config.js'
 import { normalizeSigned, projectX } from './geometry.js'
 
 const rgba = (c, a) => `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${a})`
