@@ -93,6 +93,7 @@ export function initViewToggle() {
 // buttons and the 'v' / 'c' keys. Initial state comes from each button's data-on attr.
 export function initPanelToggles() {
   const defs = [
+    { key: 'w', btn: 't-wx', panel: 'wx' },
     { key: 'v', btn: 't-view', panel: 'see' },
     { key: 'c', btn: 't-cal', panel: 'cal' }
   ]
@@ -100,7 +101,8 @@ export function initPanelToggles() {
     const btn = document.getElementById(d.btn), panel = document.getElementById(d.panel)
     if (!btn || !panel) continue
     let shown = btn.dataset.on === 'true'
-    const apply = () => { panel.style.display = shown ? '' : 'none'; btn.classList.toggle('on', shown) }
+    // Use explicit 'block' (not '') so showing overrides any CSS `display:none` default.
+    const apply = () => { panel.style.display = shown ? 'block' : 'none'; btn.classList.toggle('on', shown) }
     d.toggle = () => { shown = !shown; apply() }
     btn.addEventListener('click', d.toggle)
     apply()

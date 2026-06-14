@@ -18,7 +18,7 @@
     #wx { top: 14px; left: 14px; min-width: 150px; }
     #see { top: 14px; right: 14px; min-width: 190px; }
     #cal { bottom: 14px; left: 14px; min-width: 170px; display: none; }
-    #toggles { position: fixed; z-index: 2; bottom: 14px; right: 14px; display: flex; gap: 8px; }
+    #toggles { position: fixed; z-index: 2; top: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; }
     #toggles button {
       cursor: pointer; color: #eef4f7; background: rgba(12, 20, 26, 0.55); backdrop-filter: blur(6px);
       border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; padding: 6px 12px;
@@ -82,6 +82,7 @@
   </section>
 
   <div id="toggles">
+    <button id="t-wx" data-on="true">Weather</button>
     <button id="t-view" data-on="true">View</button>
     <button id="t-cal" data-on="false">Calibration</button>
   </div>
