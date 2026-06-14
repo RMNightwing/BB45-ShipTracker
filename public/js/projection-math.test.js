@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { vFovFromHFov, fogDensity, bearingOfDir, cylindricalProject } from './projection-math.js'
+import { vFovFromHFov, fogDensity, bearingOfDir, cylindricalProject, tileAzOffset, tileIndexForAz } from './projection-math.js'
 
 test('vFovFromHFov inverts via aspect', () => {
   assert.ok(Math.abs(vFovFromHFov(90, 1) - 90) < 1e-6)
@@ -28,4 +28,18 @@ test('cylindricalProject maps azimuth linearly across the fov', () => {
   const behind = cylindricalProject({ x: Math.sin(40 * Math.PI / 180), y: 0,
     z: -Math.cos(40 * Math.PI / 180) }, v, W, horizonY)
   assert.equal(behind.visible, false)
+})
+
+test('tileAzOffset spaces tiles symmetrically across the fov', () => {
+  assert.deepEqual([0, 1, 2, 3].map(i => tileAzOffset(i, 156, 4)), [-58.5, -19.5, 19.5, 58.5])
+})
+
+test('tileIndexForAz maps azimuths to tiles and flags out-of-fov', () => {
+  assert.equal(tileIndexForAz(-78, 156, 4), 0)     // far-left edge → tile 0
+  assert.equal(tileIndexForAz(-40, 156, 4), 0)     // in [-78,-39) → tile 0
+  assert.equal(tileIndexForAz(0, 156, 4), 2)       // centre boundary → upper tile
+  assert.equal(tileIndexForAz(58, 156, 4), 3)      // → tile 3
+  assert.equal(tileIndexForAz(78, 156, 4), 3)      // right edge clamps to last tile
+  assert.equal(tileIndexForAz(80, 156, 4), -1)     // outside fov
+  assert.equal(tileIndexForAz(-90, 156, 4), -1)    // outside fov
 })

@@ -17,6 +17,20 @@ export function bearingOfDir(d) {
   return (toDeg(Math.atan2(d.x, -d.z)) + 360) % 360
 }
 
+// Tiled panorama: center azimuth offset (deg, relative to viewBearing) of tile i of
+// n covering a total fov. Tiles span [-fov/2, +fov/2] left→right.
+export function tileAzOffset(i, fov, n) {
+  return -fov / 2 + (i + 0.5) * (fov / n)
+}
+
+// Tiled panorama: which tile (0..n-1) a relative azimuth (deg from viewBearing) falls
+// in, or -1 if outside the fov. Boundaries fall into the upper (rightward) tile.
+export function tileIndexForAz(relAzDeg, fov, n) {
+  if (relAzDeg < -fov / 2 || relAzDeg > fov / 2) return -1
+  const i = Math.floor((relAzDeg + fov / 2) / (fov / n))
+  return Math.max(0, Math.min(n - 1, i))
+}
+
 // Cylindrical (equidistant) world→screen for the wide view: azimuth linear in x
 // across the fov, elevation linear in y (isotropic px/deg). Mirrors the composite
 // shader so HUD/tooltips line up with what's drawn. d is a dir from the eye.
