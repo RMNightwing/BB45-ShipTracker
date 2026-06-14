@@ -101,6 +101,9 @@ export function makeShipMesh(ship) {
   const d = shipDims(ship.type, ship.len || 80)
   const build = BUILDERS[ship.type] || BUILDERS.coaster
   const g = build(d.length, d.beam, d.hullH)
+  // Builders MUST keep local min.y ≈ 0 (hull base at the waterline): world.js's
+  // hull-down clip plane measures height up from world y=0, so a keel dipping below
+  // 0 would silently misalign the cut.
   const b = new THREE.Box3().setFromObject(g)
   g.userData.heightM = b.max.y - b.min.y
   return g

@@ -126,7 +126,10 @@ export function createWorld(canvas) {
         sp.userData.type = s.type; sp.userData.len = len
         sp.userData.clip = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
         sp.userData.materials = shipMaterials(sp)
-        for (const m of sp.userData.materials) m.clippingPlanes = [sp.userData.clip]
+        for (const m of sp.userData.materials) {
+          m.clippingPlanes = [sp.userData.clip]
+          if (m.emissive) m.emissive.setHex(0x223038)   // fixed moonlit tint; only intensity varies per frame
+        }
         sp.add(makeWake(len, s.kn))
         shipLayer.add(sp); meshes.set(s.id, sp)
       }
@@ -143,7 +146,7 @@ export function createWorld(canvas) {
       // Night legibility: lift an emissive floor as ambient falls.
       const emis = Math.max(0, 0.5 - (env.ambient ?? 1) * 0.5)
       for (const m of sp.userData.materials) {
-        if (m.emissive) { m.emissive.setHex(0x223038); m.emissiveIntensity = emis }
+        if (m.emissive) m.emissiveIntensity = emis
       }
       sp.userData.ship = s; sp.userData.hullDown = hd.state === 'hulldown'
     }
