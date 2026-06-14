@@ -67,3 +67,21 @@ test('skyState: interpolates between keyframes', () => {
   const s = skyState(7) // between the +12 and +2 rows
   assert.ok(s.ambient > 0.85 && s.ambient < 1)
 })
+
+import { projectCelestial } from './sky.js'
+
+// args: (azimuth, elevation, viewBearing, fov, W, H, horizonY)
+test('projectCelestial: a body at view-centre, well up, sits centred above the horizon', () => {
+  const p = projectCelestial(223, 25, 223, 156, 1000, 800, 336)
+  assert.equal(p.visible, true)
+  assert.ok(Math.abs(p.x - 500) < 1, `x ${p.x}`)
+  assert.ok(p.y < 336, `y ${p.y}`)
+})
+
+test('projectCelestial: below the horizon is not visible', () => {
+  assert.equal(projectCelestial(223, -5, 223, 156, 1000, 800, 336).visible, false)
+})
+
+test('projectCelestial: outside the view arc is not visible', () => {
+  assert.equal(projectCelestial(20, 30, 223, 156, 1000, 800, 336).visible, false)
+})

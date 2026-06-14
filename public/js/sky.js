@@ -3,6 +3,7 @@
 // Solar/lunar math adapted from the well-known SunCalc formulas.
 
 import { SKY } from './config.js'
+import { projectX } from './geometry.js'
 
 const rad = Math.PI / 180
 const dayMs = 86400000, J1970 = 2440588, J2000 = 2451545
@@ -68,4 +69,16 @@ export function skyState(elevationDeg) {
   out.ambient = lerp(hi.ambient, lo.ambient, u)
   out.starAlpha = lerp(hi.starAlpha, lo.starAlpha, u)
   return out
+}
+
+const SKY_VTOP = 50 // elevation (deg) that maps to the top of the sky band
+
+// Screen position for a celestial body. x from true azimuth (exact, via projectX);
+// y from a stylized elevation map (0° at the horizon, ~SKY_VTOP° near the top).
+// visible is false below the horizon or outside the view arc.
+export function projectCelestial(azimuth, elevation, viewBearing, fov, W, H, horizonY) {
+  const x = projectX(azimuth, viewBearing, fov, W)
+  const up = Math.max(0, Math.min(1, elevation / SKY_VTOP))
+  const y = horizonY - up * horizonY * 0.92
+  return { x: x == null ? null : x, y, visible: x != null && elevation > -1 }
 }
