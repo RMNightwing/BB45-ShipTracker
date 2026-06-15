@@ -80,6 +80,8 @@ export const SKY = [
 // docs/superpowers/specs/2026-06-15-glb-ship-models-design.md.
 export const SHIP_MODELS = {
   file: 'models/lowpoly_cargoship.glb',
+  // type → GLB node. Mapped types take the model's own proportions (beam/height), NOT
+  // ship-dims.js — so e.g. coaster wears boat2's small-cargo shape. Unmapped (cruise/yacht) → procedural.
   nodes: { container: 'boat1', coaster: 'boat2', bulk: 'boat4', tanker: 'boat5' },
   bowYawDeg: 90   // rotate model length (+X) onto our bow (−Z); flip to 270 if ships face backward
 }
