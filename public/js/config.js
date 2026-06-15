@@ -34,7 +34,7 @@ export const SIZE_GAIN = 0.0016     // overall magnification (Size slider); abso
 export const SIZE_CONSTANCY = 0.4   // 0 = optics (∝1/dist); 1 = size depends only on length
 export const MIN_ANGLE = 0.012      // rad: legibility floor for the farthest ship
 export const MAX_ANGLE = 0.5        // rad: cap so a near ship can't swallow the frame
-export const DEPTH_SPREAD = 0.7     // vertical fan (Spread slider); replaces EXAGGERATION
+export const DEPTH_SPREAD = 0.9     // vertical fan (Spread slider); replaces EXAGGERATION
 export const HAZE_STRENGTH = 0.4    // ship haze fade (Haze slider); 0 = crisp to the cull
 export const HAZE_FLOOR = 0.35      // minimum ship clarity (never veiled)
 // Distance (km) at/below which a ship gets the full depth nudge; nearness ramps 1→0

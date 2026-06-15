@@ -23,10 +23,10 @@ export function recycle(s, deck = VIEWS.max) {
   const sign = Math.random() < 0.5 ? -1 : 1
   const off = sign * (deck.fov / 2) * (0.55 + Math.random() * 0.4)
   const brg = (deck.viewBearing + off + 360) % 360
-  // Strongly near-biased: from a ~32 m deck the sea horizon is only ~20 km, so keep
-  // most ships well inside it (full-hulled and large for a real sense of depth via
-  // size), with a few drifting out past the horizon for the hull-down effect.
-  const dist = 2 + Math.pow(Math.random(), 2.4) * 22 // ~2..24 km, most near
+  // Spread distances across most of the visible range so the fleet genuinely fans
+  // (the perceptual size rule keeps far ships legible, so near-bias is no longer
+  // needed). Mild bias keeps a few closer; the far ones go hull-down near the cull.
+  const dist = 3 + Math.pow(Math.random(), 1.4) * 33 // ~3..36 km, broadly spread
   const b = toRad(brg), dDeg = dist / KM_PER_DEG
   s.lat = deck.lat + dDeg * Math.cos(b)
   s.lon = deck.lon + dDeg * Math.sin(b) / Math.cos(toRad(deck.lat))
@@ -42,18 +42,18 @@ export function stepFleet(fleet, dtSec, deck = VIEWS.max) {
 }
 
 // ~9 plausible vessels. Placed by bearing offset + distance, then converted to lat/lon.
-// dist spread near→edge so the opening view already shows depth: a couple right
-// off the coast (big), a band mid-water, one out at the hull-down edge.
+// dist deliberately spread ~4→35 km so the opening view fans across the whole depth:
+// a few near (big, low), a mid band, and a couple out near the hull-down edge.
 const SEED = [
-  { name: 'Maersk Batam', flag: '🇸🇬', type: 'container', dest: 'Willemstad', len: 300, kn: 14, off: -28, dist: 4 },
-  { name: 'Bonaire Star', flag: '🇳🇱', type: 'coaster', dest: 'Kralendijk', len: 95, kn: 11, off: -10, dist: 3 },
-  { name: 'Caribbean Dawn', flag: '🇧🇸', type: 'cruise', dest: 'Willemstad', len: 290, kn: 17, off: 6, dist: 9 },
-  { name: 'Aframax Carina', flag: '🇱🇷', type: 'tanker', dest: 'Punta Cardón', len: 245, kn: 12, off: 20, dist: 15 },
-  { name: 'Isla Cargo', flag: '🇵🇦', type: 'bulk', dest: 'Oranjestad', len: 180, kn: 10, off: 34, dist: 22 },
-  { name: 'Sea Breeze', flag: '🇫🇷', type: 'yacht', dest: 'Spanish Water', len: 38, kn: 8, off: -18, dist: 5 },
-  { name: 'Antilla Trader', flag: '🇵🇦', type: 'coaster', dest: 'La Guaira', len: 110, kn: 12, off: 14, dist: 11 },
-  { name: 'Gulf Pioneer', flag: '🇲🇭', type: 'tanker', dest: 'Amuay', len: 250, kn: 13, off: -40, dist: 24 },
-  { name: 'Blue Horizon', flag: '🇬🇧', type: 'cruise', dest: 'Willemstad', len: 270, kn: 16, off: 40, dist: 7 }
+  { name: 'Maersk Batam', flag: '🇸🇬', type: 'container', dest: 'Willemstad', len: 300, kn: 14, off: -28, dist: 5 },
+  { name: 'Bonaire Star', flag: '🇳🇱', type: 'coaster', dest: 'Kralendijk', len: 95, kn: 11, off: -10, dist: 9 },
+  { name: 'Caribbean Dawn', flag: '🇧🇸', type: 'cruise', dest: 'Willemstad', len: 290, kn: 17, off: 6, dist: 16 },
+  { name: 'Aframax Carina', flag: '🇱🇷', type: 'tanker', dest: 'Punta Cardón', len: 245, kn: 12, off: 20, dist: 23 },
+  { name: 'Isla Cargo', flag: '🇵🇦', type: 'bulk', dest: 'Oranjestad', len: 180, kn: 10, off: 34, dist: 31 },
+  { name: 'Sea Breeze', flag: '🇫🇷', type: 'yacht', dest: 'Spanish Water', len: 38, kn: 8, off: -18, dist: 4 },
+  { name: 'Antilla Trader', flag: '🇵🇦', type: 'coaster', dest: 'La Guaira', len: 110, kn: 12, off: 14, dist: 13 },
+  { name: 'Gulf Pioneer', flag: '🇲🇭', type: 'tanker', dest: 'Amuay', len: 250, kn: 13, off: -40, dist: 35 },
+  { name: 'Blue Horizon', flag: '🇬🇧', type: 'cruise', dest: 'Willemstad', len: 270, kn: 16, off: 40, dist: 20 }
 ]
 
 export function makeFleet() {
