@@ -6,6 +6,7 @@ import { VIEWS, DEFAULT_VIEW, SUPERSTRUCTURE_M, NEAR_KM, FAR_KM,
   SIZE_GAIN, SIZE_CONSTANCY, MIN_ANGLE, MAX_ANGLE, DEPTH_SPREAD, HAZE_STRENGTH, HAZE_FLOOR } from './config.js'
 import { apparentAngle, renderedDistanceKm, shipClarity } from './perception.js'
 import { makeShipMesh, makeWake, shipMaterials } from './ship-meshes.js'
+import { createShipModels } from './ship-models.js'
 import { createStarField } from './star-field.js'
 import { PerspectiveProjection, TiledPanoramaProjection } from './projections.js'
 import { fogDensity } from './projection-math.js'
@@ -97,6 +98,9 @@ export function createWorld(canvas) {
 
   const shipLayer = new THREE.Group(); scene.add(shipLayer)
   const meshes = new Map()
+  const shipModels = createShipModels()
+  // Model if its GLB is loaded for this type, else the procedural mesh (also during async load).
+  const makeShip = s => shipModels.modelReady(s.type) ? shipModels.makeShipModel(s) : makeShipMesh(s)
   // Caller sets s._distanceKm and s._enu (ENU vs DEFAULT_VIEW origin) on each ship.
   function updateShips(ships, env) {
     const eye = projection ? projection.eyeGround() : { e: 0, n: 0 }
@@ -111,16 +115,17 @@ export function createWorld(canvas) {
       seen.add(s.id)
       let sp = meshes.get(s.id)
       const len = s.len || 80
-      if (!sp || sp.userData.type !== s.type || sp.userData.len !== len) {
+      if (!sp || sp.userData.type !== s.type || sp.userData.len !== len ||
+          (shipModels.modelReady(s.type) && !sp.userData.isModel)) {
         if (sp) { shipLayer.remove(sp); disposeShip(sp) }
-        sp = makeShipMesh(s)
+        sp = makeShip(s)
         sp.userData.type = s.type; sp.userData.len = len
         sp.userData.clip = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
         sp.userData.materials = shipMaterials(sp)
         for (const m of sp.userData.materials) {
           m.clippingPlanes = [sp.userData.clip]
           m.fog = false                                // ships use perceptual haze, not scene FogExp2
-          m.userData.baseColor = m.color.clone()       // remember the un-hazed colour
+          if (m.color) m.userData.baseColor = m.color.clone()  // remember the un-hazed colour
           if (m.emissive) m.emissive.setHex(0x223038)  // fixed moonlit tint; only intensity varies
           m.needsUpdate = true
         }
@@ -146,7 +151,7 @@ export function createWorld(canvas) {
       const clarity = shipClarity(s._distanceKm, FAR_KM, hazeStrength, HAZE_FLOOR)
       const emis = Math.max(0, 0.5 - (env.ambient ?? 1) * 0.5)
       for (const m of sp.userData.materials) {
-        m.color.copy(m.userData.baseColor).lerp(haze, 1 - clarity)
+        if (m.userData.baseColor) m.color.copy(m.userData.baseColor).lerp(haze, 1 - clarity)
         if (m.emissive) m.emissiveIntensity = emis
       }
       sp.userData.ship = s; sp.userData.hullDown = hd.state === 'hulldown'
@@ -158,8 +163,11 @@ export function createWorld(canvas) {
   }
   function disposeShip(sp) {
     sp.traverse(o => {
-      if (o.geometry) o.geometry.dispose()
-      if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose() }
+      if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose()
+      if (o.material) {
+        if (o.material.map && !o.material.map.userData.shared) o.material.map.dispose()
+        o.material.dispose()
+      }
     })
   }
   // Screen rects for overlay hover/tooltip, anchored at the ship's mid-height.
