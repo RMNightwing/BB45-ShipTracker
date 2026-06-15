@@ -69,7 +69,9 @@ export const SHIP_MODELS = {
 - Loads `SHIP_MODELS.file` once via `GLTFLoader`. On success, for each mapped type: `getObjectByName(node)`,
   clone it, `Box3.setFromObject` → `modelTransform(...)`, and build a **unit template** = a group that
   recenters the clone by `offset`, scales by `scale`, and yaws by `yawRad` (length→−Z). Store the
-  template + `heightUnit` per type; mark `loaded`.
+  template + `heightUnit` per type; mark `loaded`. When building each template, tag its shared
+  resources: `mesh.geometry.userData.shared = true` and (if present) `material.map.userData.shared = true`,
+  so disposal of per-ship clones never frees them.
 - `modelReady(type)` → true once loaded and `type` is in the map.
 - `makeShipModel(s)` → an **outer group**; inner = `template.clone()` then **traverse and replace each
   `o.material` with `o.material.clone()`** (per-instance materials so clip plane / haze / emissive don't
@@ -87,10 +89,11 @@ export const SHIP_MODELS = {
 - Everything else (`shipMaterials` traversal for clip plane + `m.fog=false` + `baseColor` + emissive,
   perceptual `apparentAngle`/`renderedDistanceKm` scale/placement, wake, `heightM`-based clip) is
   unchanged — it already operates on "a group + its materials," which models satisfy.
-- **Disposal:** `disposeShip` must respect shared model resources. For `userData.isModel` groups,
-  dispose only the per-instance cloned **materials** (`material.dispose()`) — do NOT dispose geometry
-  or `material.map` (shared with the template; freeing them would break other ships of that type).
-  Procedural meshes keep disposing geometry + material + map (all per-instance) as today.
+- **Disposal:** `disposeShip` skips resources flagged shared, so it works for both models and
+  procedural+wake: `if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose()`; for materials,
+  `if (o.material.map && !o.material.map.userData.shared) o.material.map.dispose(); o.material.dispose()`.
+  Template geometry/textures are flagged shared (skipped); per-instance materials, procedural geometry,
+  and the wake (geometry+texture) are not flagged → freed normally.
 
 ### 6. Data folder
 - `public/models/lowpoly_cargoship.glb` committed. `public/models/README.md` credits the pack
