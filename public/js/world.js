@@ -3,7 +3,8 @@ import { Water } from '../vendor/three/Water.js'
 import { Sky } from '../vendor/three/Sky.js'
 import { enu, toRad, hullDownState } from './geometry.js'
 import { VIEWS, DEFAULT_VIEW, SUPERSTRUCTURE_M, NEAR_KM, FAR_KM,
-  SIZE_GAIN, SIZE_CONSTANCY, MIN_ANGLE, MAX_ANGLE, DEPTH_SPREAD, HAZE_STRENGTH, HAZE_FLOOR } from './config.js'
+  SIZE_GAIN, SIZE_CONSTANCY, MIN_ANGLE, MAX_ANGLE, DEPTH_SPREAD, HAZE_STRENGTH, HAZE_FLOOR,
+  RENDER_NEAR_KM, RENDER_FAR_KM, SPREAD_CURVE } from './config.js'
 import { apparentAngle, renderedDistanceKm, shipClarity } from './perception.js'
 import { makeShipMesh, makeWake, shipMaterials } from './ship-meshes.js'
 import { createShipModels } from './ship-models.js'
@@ -137,16 +138,20 @@ export function createWorld(canvas) {
       // Perceptual placement: true bearing fixes the azimuth ray; the depth rule sets
       // how far down it the ship sits (vertical position); the size rule sets its
       // on-screen angular size. Bearing stays exact; size/position are independent.
-      const dPrimeKm = renderedDistanceKm(s._distanceKm, depthSpread, NEAR_KM, FAR_KM)
+      const dPrimeKm = renderedDistanceKm(s._distanceKm, depthSpread, NEAR_KM, FAR_KM,
+        RENDER_NEAR_KM, RENDER_FAR_KM, SPREAD_CURVE)
       const f = dPrimeKm / Math.max(0.001, s._distanceKm)
       sp.position.set(eye.e + f * (s._enu.e - eye.e), 0, -(eye.n + f * (s._enu.n - eye.n)))
       sp.rotation.y = -toRad(s.course ?? s.cog ?? 0)
       const ang = apparentAngle(len, s._distanceKm, sizeGain, SIZE_CONSTANCY, MIN_ANGLE, MAX_ANGLE)
       const scale = ang * (dPrimeKm * 1000) / len
       sp.scale.setScalar(scale)
-      // Hull-down (TRUE distance): raise the world clip plane to cut the lower hull.
+      // Hull-down clip from the RENDERED distance, so a ship pulled into the foreground by
+      // the spread shows a full hull instead of a superstructure floating over open water.
+      // (Culling — the 'gone' state above — still uses true distance.)
+      const hdRender = hullDownState(dPrimeKm, env.deckHeight, SUPERSTRUCTURE_M)
       const worldH = sp.userData.heightM * scale
-      sp.userData.clip.constant = -(hd.clipFrac * worldH)
+      sp.userData.clip.constant = -(hdRender.clipFrac * worldH)
       // Perceptual haze (TRUE distance) + night emissive floor.
       const clarity = shipClarity(s._distanceKm, FAR_KM, hazeStrength, HAZE_FLOOR)
       const emis = Math.max(0, 0.5 - (env.ambient ?? 1) * 0.5)

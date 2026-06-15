@@ -13,7 +13,6 @@ export function createShipModels() {
   let loaded = false
 
   new GLTFLoader().load(SHIP_MODELS.file, gltf => {
-    console.log('[ship-models] GLB loaded; scene children:', gltf.scene.children.map(o => o.name))
     for (const [type, nodeName] of Object.entries(SHIP_MODELS.nodes)) {
       try {
         const node = gltf.scene.getObjectByName(nodeName)
@@ -37,7 +36,6 @@ export function createShipModels() {
       }
     }
     loaded = true
-    console.log('[ship-models] templates ready:', [...templates.keys()])
   }, undefined, err => console.error('[ship-models] GLB load failed:', err))
 
   return {

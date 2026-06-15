@@ -31,15 +31,21 @@ test('apparentAngle respects the min floor and max cap', () => {
 
 // --- renderedDistanceKm ---
 test('renderedDistanceKm equals true distance when spread is 0', () => {
-  assert.equal(renderedDistanceKm(12, 0, 2, 40), 12)
+  assert.equal(renderedDistanceKm(12, 0, 2, 40, 0.4, 3, 0.6), 12)
 })
 
-test('renderedDistanceKm pulls nearer ships in and never exceeds true distance', () => {
-  const d = renderedDistanceKm(5, 0.7, 2, 40)
-  assert.ok(d > 0 && d < 5)
-  const dFar = renderedDistanceKm(38, 0.7, 2, 40)
-  assert.ok(dFar <= 38)                                    // far edge barely nudged
-  assert.ok(renderedDistanceKm(3, 0.7, 2, 40) / 3 < renderedDistanceKm(20, 0.7, 2, 40) / 20)
+test('renderedDistanceKm maps the whole range into the band at full spread', () => {
+  assert.ok(Math.abs(renderedDistanceKm(2, 1, 2, 40, 0.4, 3, 0.6) - 0.4) < 1e-9)  // near end → renderNear
+  assert.ok(Math.abs(renderedDistanceKm(40, 1, 2, 40, 0.4, 3, 0.6) - 3) < 1e-9)   // far end → renderFar
+  const mid = renderedDistanceKm(20, 1, 2, 40, 0.4, 3, 0.6)
+  assert.ok(mid > 0.4 && mid < 3)                          // everything lands inside the band
+})
+
+test('renderedDistanceKm pulls far ships toward the foreground and stays monotonic', () => {
+  const near = renderedDistanceKm(5, 0.95, 2, 40, 0.4, 3, 0.6)
+  const far = renderedDistanceKm(35, 0.95, 2, 40, 0.4, 3, 0.6)
+  assert.ok(far < 35)                                      // far ship pulled well in
+  assert.ok(far > near)                                    // depth order preserved (nearer renders nearer)
 })
 
 // --- shipClarity ---

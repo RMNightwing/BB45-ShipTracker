@@ -30,16 +30,21 @@ export const FAR_KM = 40
 // docs/superpowers/specs/2026-06-14-perceptual-ship-model-design.md. These are the
 // baked defaults; the Calibration sliders override SIZE_GAIN/DEPTH_SPREAD/HAZE_STRENGTH
 // live. Tune by eye against the real bay, then read the values back here.
-export const SIZE_GAIN = 0.0016     // overall magnification (Size slider); absorbs units
+export const SIZE_GAIN = 0.0028     // overall magnification (Size slider); absorbs units
 export const SIZE_CONSTANCY = 0.4   // 0 = optics (∝1/dist); 1 = size depends only on length
-export const MIN_ANGLE = 0.012      // rad: legibility floor for the farthest ship
+export const MIN_ANGLE = 0.02       // rad: legibility floor for the farthest ship
 export const MAX_ANGLE = 0.5        // rad: cap so a near ship can't swallow the frame
-export const DEPTH_SPREAD = 0.9     // vertical fan (Spread slider); replaces EXAGGERATION
+export const DEPTH_SPREAD = 0.95    // vertical fan (Spread slider); replaces EXAGGERATION
 export const HAZE_STRENGTH = 0.4    // ship haze fade (Haze slider); 0 = crisp to the cull
 export const HAZE_FLOOR = 0.35      // minimum ship clarity (never veiled)
-// Distance (km) at/below which a ship gets the full depth nudge; nearness ramps 1→0
-// from here out to FAR_KM.
+// Spread band: at full Spread the whole fleet renders within [RENDER_NEAR_KM, RENDER_FAR_KM]
+// (km along the bearing ray) so ships fan across the foreground instead of piling at the
+// horizon. SPREAD_CURVE <1 bunches the far ships down harder; NEAR_KM/FAR_KM are the true
+// distances mapped onto the band's two ends.
 export const NEAR_KM = 2
+export const RENDER_NEAR_KM = 0.4   // closest a ship renders at full spread (nearest, lowest)
+export const RENDER_FAR_KM = 3.0    // farthest a ship renders at full spread (still on water)
+export const SPREAD_CURVE = 0.6     // exponent on normalized distance; <1 = pull far ships in
 
 // Minimum drawn ship width (px), so the farthest vessel is a faint smudge on the
 // horizon rather than a sub-pixel that vanishes before the honest hull-down cull.

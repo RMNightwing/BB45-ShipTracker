@@ -29,8 +29,13 @@ exists) and the DECK constants (the source of truth for the whole view).
 ## The geometry (drives everything)
 
 - bearing → horizontal position (exact); distance → apparent size (exact, capped).
-- Vertical position is the only stylized axis: a gentle `EXAGGERATION` nudge so
-  nearer ships sit lower for legibility. Hull-down onset stays physically exact.
+- Vertical position is the stylized axis: the `DEPTH_SPREAD` rule maps true distance
+  onto a foreground band (`renderedDistanceKm`) so the fleet fans across the water
+  instead of piling at the horizon — the eye height makes a literal projection bunch
+  everything into a thin horizon strip, so we break physics here for legibility.
+- Hull-down clipping follows the RENDERED distance (so a ship pulled into the
+  foreground shows a full hull, not a floating superstructure); the cull at ~38 km
+  still uses TRUE distance.
 - `horizonKm(h) = 3.57·√h`. From a 28 m deck the sea horizon is ≈18.9 km; a ship's
   superstructure stays visible to ≈38 km, then it is culled.
 - The Venezuela ridge (70 km, ~900 m peaks) is gated by an aerosol-derived

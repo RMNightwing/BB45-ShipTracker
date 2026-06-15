@@ -1,5 +1,3 @@
-import { nearness } from './geometry.js'
-
 // The perceptual ship model: three rules that replace optics with how the eye reads
 // the bay. Pure (no three) so they unit-test under node. See
 // docs/superpowers/specs/2026-06-14-perceptual-ship-model-design.md.
@@ -15,10 +13,14 @@ export function apparentAngle(lengthM, trueKm, gain, constancy, minA, maxA) {
 }
 
 // Depth/spread rule. Returns the rendered distance (km) along the true bearing ray;
-// smaller = lower in the frame. spread 0 = true depression (piled at horizon); higher
-// pulls nearer ships down to fan the fleet across the foreground. Never exceeds true.
-export function renderedDistanceKm(trueKm, spread, nearKm, farKm) {
-  return trueKm * (1 - spread * nearness(trueKm, nearKm, farKm))
+// smaller = lower in the frame. spread 0 = true distance (physical, piled at the horizon);
+// spread 1 maps the whole true range [nearKm, farKm] into the foreground band
+// [renderNear, renderFar] so the fleet fans across the water. The map is monotonic in
+// trueKm, so depth order is always preserved. curve <1 pulls the far ships in harder.
+export function renderedDistanceKm(trueKm, spread, nearKm, farKm, renderNear, renderFar, curve) {
+  const t = Math.max(0, Math.min(1, (trueKm - nearKm) / (farKm - nearKm)))
+  const compressed = renderNear + (renderFar - renderNear) * Math.pow(t, curve)
+  return trueKm + spread * (compressed - trueKm)
 }
 
 // Haze rule. Returns clarity 0..1 (1 = crisp) from TRUE distance, gentler than optical
