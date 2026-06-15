@@ -24,7 +24,7 @@
       border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; padding: 6px 12px;
       font: 12px -apple-system, "Segoe UI", system-ui, sans-serif;
     }
-    #toggles button.on { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.40); }
+    #toggles button.on, .btns button.on { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.40); }
     .panel h2 { margin: 0 0 6px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; opacity: .7; }
     .panel .row { display: flex; justify-content: space-between; gap: 14px; }
     #see input[type=range], #cal input[type=range] { width: 100%; }
@@ -67,6 +67,7 @@
     </div>
     <div class="btns">
       <button id="view-toggle">🔭 Full sweep</button>
+      <button id="t-lines" data-on="true">✦ Lines</button>
     </div>
     <div class="row" style="margin-top:6px"><span>Ships</span><span id="ships-status">simulated</span></div>
   </section>
@@ -84,7 +85,6 @@
   <div id="toggles">
     <button id="t-wx" data-on="true">Weather</button>
     <button id="t-cal" data-on="false">Calibration</button>
-    <button id="t-lines" data-on="true">Lines</button>
     <button id="t-view" data-on="true">View</button>
   </div>
 

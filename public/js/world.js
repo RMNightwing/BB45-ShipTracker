@@ -48,7 +48,7 @@ export function createWorld(canvas) {
   // show. Water also darkens at night so it stops reading tropical-teal after dusk.
   const DAY_BG = new THREE.Color(0x8fb6e6), NIGHT_BG = new THREE.Color(0x05070d)
   const DAY_FOG = new THREE.Color(0x9fb6c8), NIGHT_FOG = new THREE.Color(0x0a0e18)
-  const DAY_WATER = new THREE.Color(0x355766), NIGHT_WATER = new THREE.Color(0x0a141c)
+  const DAY_WATER = new THREE.Color(0x355766), NIGHT_WATER = new THREE.Color(0x05090f)
 
   // Real magnitude-6 sky placed at true alt/az for the deck, wheeling with the clock,
   // with constellation lines. Replaces the old even Fibonacci field (which read as a grid).
