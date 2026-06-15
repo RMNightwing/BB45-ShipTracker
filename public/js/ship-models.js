@@ -13,26 +13,32 @@ export function createShipModels() {
   let loaded = false
 
   new GLTFLoader().load(SHIP_MODELS.file, gltf => {
+    console.log('[ship-models] GLB loaded; scene children:', gltf.scene.children.map(o => o.name))
     for (const [type, nodeName] of Object.entries(SHIP_MODELS.nodes)) {
-      const node = gltf.scene.getObjectByName(nodeName)
-      if (!node) { console.warn('[ship-models] node not found:', nodeName); continue }
-      const clone = node.clone(true)
-      const box = new THREE.Box3().setFromObject(clone)
-      const t = modelTransform(box.min.toArray(), box.max.toArray(), SHIP_MODELS.bowYawDeg)
-      // recenter (xz) + drop base to waterline, then scale to unit length, then yaw to −Z
-      const recenter = new THREE.Group(); recenter.add(clone)
-      recenter.position.set(t.offset[0], t.offset[1], t.offset[2])
-      const scaled = new THREE.Group(); scaled.add(recenter); scaled.scale.setScalar(t.scale)
-      const tpl = new THREE.Group(); tpl.add(scaled); tpl.rotation.y = t.yawRad
-      tpl.traverse(o => {                          // flag shared resources (never disposed)
-        if (o.geometry) o.geometry.userData.shared = true
-        if (o.material) for (const m of (Array.isArray(o.material) ? o.material : [o.material]))
-          if (m.map) m.map.userData.shared = true
-      })
-      templates.set(type, { group: tpl, heightUnit: t.heightUnit })
+      try {
+        const node = gltf.scene.getObjectByName(nodeName)
+        if (!node) { console.warn('[ship-models] node not found:', nodeName); continue }
+        const clone = node.clone(true)
+        const box = new THREE.Box3().setFromObject(clone)
+        const t = modelTransform(box.min.toArray(), box.max.toArray(), SHIP_MODELS.bowYawDeg)
+        // recenter (xz) + drop base to waterline, then scale to unit length, then yaw to −Z
+        const recenter = new THREE.Group(); recenter.add(clone)
+        recenter.position.set(t.offset[0], t.offset[1], t.offset[2])
+        const scaled = new THREE.Group(); scaled.add(recenter); scaled.scale.setScalar(t.scale)
+        const tpl = new THREE.Group(); tpl.add(scaled); tpl.rotation.y = t.yawRad
+        tpl.traverse(o => {                          // flag shared resources (never disposed)
+          if (o.geometry) o.geometry.userData.shared = true
+          if (o.material) for (const m of (Array.isArray(o.material) ? o.material : [o.material]))
+            if (m.map) m.map.userData.shared = true
+        })
+        templates.set(type, { group: tpl, heightUnit: t.heightUnit })
+      } catch (e) {
+        console.error('[ship-models] failed to build', type, 'from node', nodeName, e)
+      }
     }
     loaded = true
-  }, undefined, err => console.warn('[ship-models] load failed:', err))
+    console.log('[ship-models] templates ready:', [...templates.keys()])
+  }, undefined, err => console.error('[ship-models] GLB load failed:', err))
 
   return {
     modelReady: type => loaded && templates.has(type),
