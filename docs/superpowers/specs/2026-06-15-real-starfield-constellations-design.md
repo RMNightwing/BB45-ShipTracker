@@ -19,12 +19,13 @@ real colour. That kills the grid look *and* lets us draw true constellations.
 
 - **Astronomically accurate**, not decorative: stars placed at their true alt/az for Blue Bay's
   latitude/longitude and the current date/time.
-- **Real catalog data, user-provided.** The sandbox can't download; the user drops two small
-  BSD-licensed files from the `d3-celestial` project into `public/data/`:
-  - `stars.6.json` — stars to mag 6 (~5000), GeoJSON with RA/Dec + `mag` + `bv` (B–V colour).
-  - `constellations.lines.json` — constellation line paths as RA/Dec vertices.
-  Sources (for the README): `https://raw.githubusercontent.com/ofrohn/d3-celestial/master/data/stars.6.json`
-  and `.../constellations.lines.json`.
+- **Real catalog data, vendored** (already committed to `public/data/`, fetched 2026-06-15 from
+  the BSD-2 `d3-celestial` project — no user download needed):
+  - `stars.6.json` — FeatureCollection, 5044 stars; each `geometry.coordinates: [raDeg, decDeg]`
+    (RA wrapped to −180..180), `properties: { mag:number, bv:string }`.
+  - `constellations.lines.json` — FeatureCollection, 89 `MultiLineString` features of `[raDeg,decDeg]`
+    vertices, `properties: { rank:string }` (1 = principal lines).
+  See `public/data/README.md` for sources/format.
 - **Constellation lines with a toggle** — drawn faint; a toolbar button `Lines` + key `l` show/hide.
 - **Sky rotates with real time** — recomputed from the clock like sun/moon (~15°/hr).
 - **No separate random layer** when the catalog loads — the mag-6 catalog is the realistic field.
@@ -55,8 +56,9 @@ az 0/180 and alt = 90 − |lat − dec|; bv/mag monotonicity and clamps).
 `createStarField(scene)` returns `{ update, setLinesVisible, setNightAlpha, ready }`.
 
 - **Load** `data/stars.6.json` and `data/constellations.lines.json` via `fetch`. Parse the GeoJSON:
-  each star → `{ raDeg, decDeg, mag, bv }`; each constellation line → a polyline of `[raDeg,decDeg]`
-  vertices. On load failure, log once and build a **random faint fallback field** (uniform-random
+  each star → `{ raDeg: c[0]<0?c[0]+360:c[0], decDeg, mag, bv: parseFloat(props.bv) }`; each
+  constellation feature → its `MultiLineString` polylines of `[raDeg,decDeg]` vertices (optionally
+  filter/weight by `rank`). On load failure, log once and build a **random faint fallback field** (uniform-random
   on the sphere, varied size/alpha) so the grid never returns.
 - **Stars** = one `THREE.Points` with a small `ShaderMaterial` carrying per-vertex `size` (from
   `magToSize`) and `color` (from `bvToColor`), plus a uniform `uAlpha` for the night fade. (Per-
@@ -84,9 +86,8 @@ constellations are visible; toggle off for a pure naked-eye sky.
 
 ### 5. Data folder
 
-`public/data/` with a `README.md` naming the two files, their `d3-celestial` source URLs, and the
-license, so it's reproducible. The JSON files themselves are user-dropped (and may be gitignored
-or committed — user's choice; default: commit them so the app is self-contained).
+`public/data/` already holds `stars.6.json`, `constellations.lines.json`, and a `README.md`
+(sources + format), committed so the app is self-contained. Nothing for the user to source.
 
 ## Files touched
 
