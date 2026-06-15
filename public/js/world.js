@@ -6,6 +6,7 @@ import { VIEWS, DEFAULT_VIEW, SUPERSTRUCTURE_M, NEAR_KM, FAR_KM,
   SIZE_GAIN, SIZE_CONSTANCY, MIN_ANGLE, MAX_ANGLE, DEPTH_SPREAD, HAZE_STRENGTH, HAZE_FLOOR } from './config.js'
 import { apparentAngle, renderedDistanceKm, shipClarity } from './perception.js'
 import { makeShipMesh, makeWake, shipMaterials } from './ship-meshes.js'
+import { createStarField } from './star-field.js'
 import { PerspectiveProjection, TiledPanoramaProjection } from './projections.js'
 import { fogDensity } from './projection-math.js'
 
@@ -49,24 +50,9 @@ export function createWorld(canvas) {
   const DAY_FOG = new THREE.Color(0x9fb6c8), NIGHT_FOG = new THREE.Color(0x0a0e18)
   const DAY_WATER = new THREE.Color(0x355766), NIGHT_WATER = new THREE.Color(0x0a141c)
 
-  // Fixed starfield, evenly scattered over a full sphere (Fibonacci sphere) so the
-  // visible upper sky reads as a natural starfield — no Math.abs equator pile-up that
-  // bunched stars into an arc on the horizon. Opacity driven by env.starAlpha.
-  const starGeo = new THREE.BufferGeometry()
-  const starN = 2600, R = 50000, starPos = new Float32Array(starN * 3)
-  for (let i = 0; i < starN; i++) {
-    const y = 1 - ((i + 0.5) / starN) * 2          // +1 (zenith) → -1 (nadir), even
-    const rad = Math.sqrt(Math.max(0, 1 - y * y))
-    const th = i * 2.399963229                      // golden angle (rad)
-    starPos[i * 3] = R * rad * Math.cos(th)
-    starPos[i * 3 + 1] = R * y                      // below-horizon stars simply aren't seen
-    starPos[i * 3 + 2] = R * rad * Math.sin(th)
-  }
-  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3))
-  const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({
-    color: 0xfffff5, size: 70, sizeAttenuation: true, transparent: true, opacity: 0, fog: false
-  }))
-  scene.add(stars)
+  // Real magnitude-6 sky placed at true alt/az for the deck, wheeling with the clock,
+  // with constellation lines. Replaces the old even Fibonacci field (which read as a grid).
+  const starField = createStarField(scene)
 
   let projection = null
   let W = 0, H = 0
@@ -102,7 +88,8 @@ export function createWorld(canvas) {
     scene.background.copy(DAY_BG).lerp(NIGHT_BG, night)
     scene.fog.color.copy(DAY_FOG).lerp(NIGHT_FOG, night)
     water.material.uniforms.waterColor.value.copy(DAY_WATER).lerp(NIGHT_WATER, night)
-    stars.material.opacity = night
+    starField.setNightAlpha(night)
+    if (env.date) starField.update(env.date)
     sky.visible = night < 0.95                          // hide the daytime sky model at deep night
     const windScale = 0.5 + (env.windKn ?? 6) / 12      // stronger wind → choppier water
     water.material.uniforms.distortionScale.value = 3.0 * windScale
@@ -189,5 +176,6 @@ export function createWorld(canvas) {
     return out
   }
 
-  return { renderer, scene, water, setProjection, getProjection: () => projection, updateEnv, resize, render, updateShips, shipScreenRects }
+  return { renderer, scene, water, setProjection, getProjection: () => projection, updateEnv, resize, render, updateShips, shipScreenRects,
+    setConstellationLines: b => starField.setLinesVisible(b) }
 }
