@@ -75,3 +75,12 @@ export const SKY = [
   { el: -18, skyTop:[8,10,24],     skyBottom:[14,18,38],    seaTop:[8,12,22],     seaBottom:[4,7,16],     horizon:[12,16,30],  sunTint:[80,90,130],   ambient:0.10, starAlpha:1    }
 ]
 
+// glTF ship models (purchased pack at public/models/). One GLB, a Scene of 5 named ship
+// nodes; map the types we cover, others fall back to the procedural meshes. See
+// docs/superpowers/specs/2026-06-15-glb-ship-models-design.md.
+export const SHIP_MODELS = {
+  file: 'models/lowpoly_cargoship.glb',
+  nodes: { container: 'boat1', coaster: 'boat2', bulk: 'boat4', tanker: 'boat5' },
+  bowYawDeg: 90   // rotate model length (+X) onto our bow (−Z); flip to 270 if ships face backward
+}
+
