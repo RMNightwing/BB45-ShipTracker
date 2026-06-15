@@ -114,6 +114,22 @@ export function initPanelToggles() {
   })
 }
 
+// A toolbar button + key that toggles a boolean and calls onToggle(state). Initial
+// state from the button's data-on attr. Used for scene toggles (e.g. constellation lines).
+export function initActionToggle(btnId, key, onToggle) {
+  const btn = document.getElementById(btnId)
+  if (!btn) return
+  let on = btn.dataset.on === 'true'
+  const apply = () => { btn.classList.toggle('on', on); onToggle(on) }
+  const toggle = () => { on = !on; apply() }
+  btn.addEventListener('click', toggle)
+  window.addEventListener('keydown', e => {
+    if (e.target.matches && e.target.matches('input, textarea, button')) return
+    if (e.key.toLowerCase() === key) toggle()
+  })
+  apply()
+}
+
 export function showTooltip(hit, mx, my) {
   const el = document.getElementById('tooltip')
   if (!hit) { el.style.opacity = '0'; return }

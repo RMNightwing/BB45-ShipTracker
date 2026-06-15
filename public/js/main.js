@@ -5,7 +5,7 @@ import { sunPosition, skyState } from './sky.js'
 import { shipAtPoint, padRect } from './ships.js'
 import { makeFleet, stepFleet } from './sim.js'
 import { fetchWeather } from './weather.js'
-import { renderWeather, renderVerdict, initControls, showTooltip, trackSticky, setShipsStatus, initViewToggle, initPanelToggles } from './ui.js'
+import { renderWeather, renderVerdict, initControls, showTooltip, trackSticky, setShipsStatus, initViewToggle, initPanelToggles, initActionToggle } from './ui.js'
 import { activeView, onViewChange } from './view.js'
 import { createWorld } from './world.js'
 import { connectRelay } from './relay-client.js'
@@ -60,6 +60,7 @@ const controls = initControls(() => {
 }, { sizeGain: SIZE_GAIN, depthSpread: DEPTH_SPREAD, hazeStrength: HAZE_STRENGTH })
 initViewToggle()
 initPanelToggles()
+initActionToggle('t-lines', 'l', on => world.setConstellationLines(on))
 
 if (!USE_SIM) { // config asked to start live
   controls.live = true
@@ -100,7 +101,7 @@ function frame(t) {
 
   const effSl = controls.manual ? controls.sightlineKm : (wx ? wx.sightlineKm : null)
   world.updateEnv({ sunAz: sp.azimuth, sunEl: sp.elevation, sightlineKm: effSl,
-    starAlpha: env.starAlpha, windKn: wx?.windKn })
+    starAlpha: env.starAlpha, windKn: wx?.windKn, date: now })
 
   if (controls.live) {
     pruneStale(store, performance.now(), SHIP_TTL)
